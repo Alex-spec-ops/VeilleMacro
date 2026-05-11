@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useRef, useCallback } from 'react';
+import React, { useReducer, useEffect, useRef, useCallback, useState } from 'react';
 import { RotateCcw, CheckCircle2, Loader2 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
@@ -13,6 +13,7 @@ const C = {
   textMuted:  '#94a3b8',
   textDim:    '#475569',
   statusIdle: '#6b7280',
+  statusPend: '#f59e0b',
   statusRun:  '#3b82f6',
   statusOk:   '#10b981',
   statusErr:  '#ef4444',
@@ -26,76 +27,65 @@ const C = {
 };
 
 /* ─────────────────────────────────────────────
-   TIMELINE (ms)
-───────────────────────────────────────────── */
-const T = {
-  p1s: 0,      p1e: 25_000,
-  p2s: 25_000, p2e: 37_000,
-  p3s: 37_000, p3e: 55_000,
-  p4s: 55_000, p4e: 56_500,
-  end: 56_500,
-};
-
-/* ─────────────────────────────────────────────
-   AGENT DEFINITIONS  (metadata only, no state)
+   AGENT DEFINITIONS
 ───────────────────────────────────────────── */
 const AGENTS = {
   collector: {
     id: 'collector', name: 'macro_research_collector',
     label: 'Collecte Sources', emoji: '🔍', color: C.blue,
-    duration: 25_000, start: T.p1s, end: T.p1e,
+    simulatedDuration: 25_000,
     desc: 'Collecte et agrège les sources macro-économiques mondiales via APIs et scraping.',
-    steps: [
+    logs: [
       'Initialisation des connecteurs API…',
       'Connexion Bloomberg Terminal, Reuters…',
       'Collecte données Fed, BCE, BNS, BoJ…',
       'Scraping actualités (47 sources)…',
       'Agrégation corpus documentaire…',
       'Déduplication & validation croisée…',
-      'Indexation vectorielle terminée ✓',
     ],
+    doneMsg: '✓ Collecte terminée — 2 847 documents indexés',
   },
   synthesis: {
     id: 'synthesis', name: 'comparative_synthesis_agent',
     label: 'Analyse Comparative', emoji: '⚖️', color: C.violet,
-    duration: 12_000, start: T.p2s, end: T.p2e,
+    simulatedDuration: 12_000,
     desc: 'Analyse comparative multi-sources avec LLM — détection signaux macro.',
-    steps: [
+    logs: [
       'Chargement corpus (2 847 documents)…',
-      'Analyse de sentiment marchés…',
+      'Analyse de sentiment marchés financiers…',
       'Comparaison indicateurs YoY / QoQ…',
       'Détection signaux macro-économiques…',
-      'Scoring divergences inter-banques…',
-      'Génération synthèse analytique LLM…',
+      'Scoring divergences inter-banques centrales…',
     ],
+    doneMsg: '✓ Synthèse générée — 14 signaux macro détectés',
   },
   dashboard: {
     id: 'dashboard', name: 'dashboard_generator_agent',
     label: 'Dashboard TSX', emoji: '📊', color: C.green,
-    duration: 18_000, start: T.p3s, end: T.p3s + 18_000,
+    simulatedDuration: 18_000,
     desc: 'Génération du dashboard React/TSX interactif avec visualisations Recharts.',
-    steps: [
-      'Structuration données visualisation…',
-      'Génération composants Recharts…',
+    logs: [
+      'Structuration des données de visualisation…',
+      'Génération composants Recharts (12 graphiques)…',
       'Compilation dashboard TSX…',
       'Tree-shaking & optimisation bundle…',
       'Injection données temps-réel…',
-      'Export artefact HTML/TSX…',
     ],
+    doneMsg: '✓ Dashboard TSX généré — 12 composants, 847 KB',
   },
   pdf: {
     id: 'pdf', name: 'pdf_report_generator',
     label: 'Rapport PDF', emoji: '📄', color: C.amber,
-    duration: 16_000, start: T.p3s, end: T.p3s + 16_000,
+    simulatedDuration: 16_000,
     desc: 'Génération du rapport PDF exécutif haute qualité, 48 pages, signatures numériques.',
-    steps: [
-      'Chargement template LaTeX…',
+    logs: [
+      'Chargement template LaTeX professionnel…',
       'Injection données analytiques…',
-      'Rendu graphiques 300 dpi…',
+      'Rendu graphiques haute résolution (300 dpi)…',
       'Compilation PDF/A-2b…',
       'Signature numérique & métadonnées…',
-      'Export rapport final (48 pages)…',
     ],
+    doneMsg: '✓ Rapport PDF généré — 48 pages, 3.2 MB',
   },
 };
 
@@ -141,7 +131,7 @@ function reducer(state, action) {
         ...initialState,
         globalStatus: 'running',
         progress:     0,
-        lastRun:      state.lastRun,   // preserve previous run timestamp
+        lastRun:      state.lastRun,
       };
 
     case 'UPDATE_AGENT':
@@ -149,10 +139,7 @@ function reducer(state, action) {
         ...state,
         agents: {
           ...state.agents,
-          [action.agent]: {
-            status:   action.status,
-            duration: action.duration,
-          },
+          [action.agent]: { status: action.status, duration: action.duration },
         },
       };
 
@@ -173,7 +160,7 @@ function reducer(state, action) {
             timestamp: action.timestamp,
             agent:     action.agent,
             message:   action.message,
-            logType:   action.logType,   // 'info' | 'success' | 'warning' | 'error'
+            logType:   action.logType,
           },
         ].slice(-80),
       };
@@ -188,10 +175,7 @@ function reducer(state, action) {
       };
 
     case 'RESET':
-      return {
-        ...initialState,
-        lastRun: state.lastRun,
-      };
+      return { ...initialState, lastRun: state.lastRun };
 
     default:
       return state;
@@ -199,11 +183,153 @@ function reducer(state, action) {
 }
 
 /* ─────────────────────────────────────────────
-   HELPERS
+   SIMULATION HELPERS
 ───────────────────────────────────────────── */
-function stepForPct(pct, len) {
-  return Math.min(Math.floor((pct / 100) * len), len - 1);
+
+/** Basic sleep — no cancellation. */
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Cancellable sleep: polls every POLL ms.
+ * Throws { cancelled: true } if signal.cancelled before ms elapse.
+ */
+function sleepC(ms, signal) {
+  const POLL = 150;
+  return new Promise((resolve, reject) => {
+    let remaining = ms;
+    const step = () => {
+      if (signal.cancelled) {
+        const e = new Error('cancelled');
+        e.cancelled = true;
+        return reject(e);
+      }
+      if (remaining <= 0) return resolve();
+      const wait = Math.min(POLL, remaining);
+      remaining -= wait;
+      setTimeout(step, wait);
+    };
+    step();
+  });
 }
+
+/**
+ * runAgent(agentId, dispatch, signal, config?)
+ *
+ * Lifecycle:
+ *   1. status → 'pending'  (1 s)
+ *   2. status → 'running'  (simulatedDuration ms)
+ *      → dispatches progressive log messages
+ *      → dispatches UPDATE_AGENT every 100 ms with current elapsed
+ *   3. status → 'success'  (final duration)
+ */
+async function runAgent(agentId, dispatch, signal, config = {}) {
+  const def = AGENTS[agentId];
+
+  // ── 1. Pending ──────────────────────────────
+  dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'pending', duration: 0 });
+  dispatch({
+    type: 'ADD_LOG', timestamp: new Date(),
+    agent: def.name, message: `⏳ ${def.label} — initialisation en cours…`, logType: 'info',
+  });
+  await sleepC(1_000, signal);
+
+  // ── 2. Running ──────────────────────────────
+  const t0 = Date.now();
+  dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'running', duration: 0 });
+  dispatch({
+    type: 'ADD_LOG', timestamp: new Date(),
+    agent: def.name, message: `▶ ${def.label} démarré`, logType: 'info',
+  });
+
+  // Schedule progressive log messages evenly across simulatedDuration
+  const stepDelay = def.simulatedDuration / (def.logs.length + 1);
+  const logTimers = def.logs.map((msg, i) =>
+    setTimeout(() => {
+      if (signal.cancelled) return;
+      dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: def.name, message: msg, logType: 'info' });
+    }, stepDelay * (i + 1)),
+  );
+
+  // Update duration every 100 ms so the progress bar animates smoothly
+  const durationInterval = setInterval(() => {
+    if (signal.cancelled) return;
+    dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'running', duration: Date.now() - t0 });
+  }, 100);
+
+  try {
+    await sleepC(def.simulatedDuration, signal);
+  } finally {
+    clearInterval(durationInterval);
+    logTimers.forEach(clearTimeout);
+  }
+
+  // ── 3. Success ──────────────────────────────
+  dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'success', duration: def.simulatedDuration });
+  dispatch({
+    type: 'ADD_LOG', timestamp: new Date(),
+    agent: def.name, message: def.doneMsg, logType: 'success',
+  });
+}
+
+/**
+ * startWorkflow(dispatch, signal)
+ *
+ * Sequential orchestration:
+ *   5%  → Step 1/4 → collector
+ *   35% → Step 2/4 → synthesis
+ *   55% → Step 3/4 → dashboard ∥ pdf
+ *   95% → Step 4/4 → sleep(2s) → email
+ *   100% → COMPLETE_WORKFLOW
+ */
+async function startWorkflow(dispatch, signal) {
+  const upd = (progress, currentStep) =>
+    dispatch({ type: 'UPDATE_PROGRESS', progress, currentStep });
+
+  const log = (message, logType = 'info') =>
+    dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: 'Orchestrateur', message, logType });
+
+  try {
+    // ── Init ────────────────────────────────
+    log('🚀 MacroSynthAI workflow initiated');
+
+    // ── Step 1: Source collection ────────────
+    upd(5, 'Step 1/4: Source collection');
+    log('Phase 1 → macro_research_collector');
+    await runAgent('collector', dispatch, signal);
+
+    // ── Step 2: Comparative synthesis ────────
+    upd(35, 'Step 2/4: Comparative synthesis');
+    log('Phase 2 → comparative_synthesis_agent');
+    await runAgent('synthesis', dispatch, signal);
+
+    // ── Step 3: Parallel outputs ─────────────
+    upd(55, 'Step 3/4: Generating outputs');
+    log('Phase 3 — fork parallèle → dashboard_generator + pdf_report_generator');
+    await Promise.all([
+      runAgent('dashboard', dispatch, signal),
+      runAgent('pdf',       dispatch, signal),
+    ]);
+
+    // ── Step 4: Send email ───────────────────
+    upd(95, 'Step 4/4: Sending email');
+    log('Envoi email → board@veillemacro.io…');
+    await sleepC(2_000, signal);
+    log('📧 Email sent — dashboard + PDF report attached', 'success');
+
+    // ── Complete ─────────────────────────────
+    upd(100, null);
+    log('✅ Workflow completed successfully', 'success');
+    dispatch({ type: 'COMPLETE_WORKFLOW' });
+
+  } catch (e) {
+    if (!e.cancelled) throw e;
+    // Cancelled — RESET already dispatched by handleReset; nothing to do here.
+  }
+}
+
+/* ─────────────────────────────────────────────
+   FORMATTERS
+───────────────────────────────────────────── */
 function fmtS(ms)     { return `${(ms / 1000).toFixed(1)}s`; }
 function fmtClock(ms) {
   const s  = Math.floor(ms / 1000);
@@ -217,19 +343,6 @@ function timeAgo(ts) {
   if (s < 60)   return `${s}s ago`;
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   return `${Math.floor(s / 3600)}h ago`;
-}
-
-/* ─────────────────────────────────────────────
-   SIMULATION — initial tracking snapshot
-───────────────────────────────────────────── */
-function mkSimState() {
-  return {
-    steps:     { collector: -1, synthesis: -1, dashboard: -1, pdf: -1 },
-    started:   { collector: false, synthesis: false, dashboard: false, pdf: false },
-    completed: { collector: false, synthesis: false, dashboard: false, pdf: false },
-    emailDone:    false,
-    workflowDone: false,
-  };
 }
 
 /* ─────────────────────────────────────────────
@@ -252,30 +365,34 @@ function Pill({ label, color, bg, dot, check }) {
 
 function StatusPill({ status }) {
   const M = {
-    idle:      { label: 'Idle',    color: C.statusIdle, bg: '#1f2937', dot: false, check: false },
-    running:   { label: 'Running', color: C.statusRun,  bg: '#172554', dot: true,  check: false },
-    completed: { label: 'Success', color: C.statusOk,   bg: '#052e16', dot: false, check: true  },
-    success:   { label: 'Success', color: C.statusOk,   bg: '#052e16', dot: false, check: true  },
-    error:     { label: 'Error',   color: C.statusErr,  bg: '#450a0a', dot: false, check: false },
+    idle:    { label: 'Idle',    color: C.statusIdle, bg: '#1f2937', dot: false, check: false },
+    pending: { label: 'Pending', color: C.statusPend, bg: '#451a03', dot: true,  check: false },
+    running: { label: 'Running', color: C.statusRun,  bg: '#172554', dot: true,  check: false },
+    success: { label: 'Success', color: C.statusOk,   bg: '#052e16', dot: false, check: true  },
+    error:   { label: 'Error',   color: C.statusErr,  bg: '#450a0a', dot: false, check: false },
   };
   const m = M[status] ?? M.idle;
   return <Pill {...m} />;
 }
 
 function ProgressBar({ pct, gradient, color, h = 6 }) {
+  const active = pct > 0 && pct < 100;
   return (
     <div style={{ height: h, background: `${color}22`, borderRadius: 99, overflow: 'hidden', position: 'relative' }}>
       <div style={{
         height: '100%', width: `${pct}%`,
         background: gradient ?? `linear-gradient(90deg,${color}99,${color})`,
-        borderRadius: 99, transition: 'width 0.25s ease',
-        position: 'relative', boxShadow: `0 0 8px 1px ${color}55`,
+        borderRadius: 99, transition: 'width 0.3s ease',
+        position: 'relative',
+        boxShadow: active ? `0 0 8px 1px ${color}55` : 'none',
       }}>
-        <span style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent)',
-          animation: 'beam 1.6s linear infinite', borderRadius: 99,
-        }} />
+        {active && (
+          <span style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent)',
+            animation: 'beam 1.6s linear infinite', borderRadius: 99,
+          }} />
+        )}
       </div>
     </div>
   );
@@ -284,12 +401,8 @@ function ProgressBar({ pct, gradient, color, h = 6 }) {
 /* ─────────────────────────────────────────────
    HEADER
 ───────────────────────────────────────────── */
-function AppHeader({ globalStatus, lastRun, elapsedRef }) {
+function AppHeader({ globalStatus, lastRun, elapsed }) {
   const isRunning = globalStatus === 'running';
-  // elapsedRef.current is updated every rAF; reads are stable because
-  // UPDATE_PROGRESS dispatches each frame, triggering re-render.
-  const elapsed = elapsedRef.current;
-
   return (
     <header style={{
       background: 'rgba(15,23,42,0.97)', borderBottom: `1px solid ${C.border}`,
@@ -331,10 +444,9 @@ function AppHeader({ globalStatus, lastRun, elapsedRef }) {
 /* ─────────────────────────────────────────────
    ORCHESTRATOR CARD
 ───────────────────────────────────────────── */
-function OrchestratorCard({ globalStatus, progress, currentStep, elapsedRef, onLaunch, onReset }) {
+function OrchestratorCard({ globalStatus, progress, currentStep, elapsed, onLaunch, onReset }) {
   const running   = globalStatus === 'running';
   const completed = globalStatus === 'success';
-  const elapsed   = elapsedRef.current;
 
   return (
     <div style={{
@@ -345,12 +457,12 @@ function OrchestratorCard({ globalStatus, progress, currentStep, elapsedRef, onL
       boxShadow: running ? `0 0 48px -8px ${C.pink}40` : completed ? `0 0 24px -8px ${C.statusOk}30` : 'none',
       transition: 'box-shadow 0.5s ease, border-color 0.4s ease',
     }}>
-      {/* Background decorations */}
+      {/* BG decorations */}
       <div style={{ position: 'absolute', inset: 0, opacity: 0.025, pointerEvents: 'none', backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
       <div style={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle,${C.pink}18 0%,transparent 70%)`, pointerEvents: 'none' }} />
 
       <div style={{ position: 'relative' }}>
-        {/* Identity row */}
+        {/* Identity */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ position: 'relative' }}>
@@ -370,20 +482,20 @@ function OrchestratorCard({ globalStatus, progress, currentStep, elapsedRef, onL
           <StatusPill status={globalStatus} />
         </div>
 
-        {/* Progress bar — state.progress drives this */}
+        {/* Progress bar — driven by state.progress */}
         <div style={{ marginBottom: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: running ? C.pink : completed ? C.statusOk : C.textDim }}>
               {progress.toFixed(1)}%
             </span>
             <span style={{ fontSize: 11, color: C.textMuted }}>
-              {running ? fmtClock(elapsed) : completed ? `${fmtS(T.end)} total` : `~${fmtS(T.end)} estimé`}
+              {running ? fmtClock(elapsed) : completed ? '56.5s total' : '~56.5s estimé'}
             </span>
           </div>
           <ProgressBar pct={progress} gradient="linear-gradient(90deg,#ec4899,#8b5cf6,#3b82f6)" color={C.pink} h={8} />
         </div>
 
-        {/* Current step — state.currentStep */}
+        {/* Current step — driven by state.currentStep */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
           background: `${C.pink}0c`, border: `1px solid ${C.pink}22`,
@@ -396,12 +508,10 @@ function OrchestratorCard({ globalStatus, progress, currentStep, elapsedRef, onL
             : completed
               ? <CheckCircle2 size={11} color={C.statusOk} />
               : <span style={{ width: 10, height: 10, borderRadius: '50%', background: C.textDim, display: 'inline-block', flexShrink: 0 }} />}
-          <span>
-            {currentStep ?? (completed ? 'Workflow terminé avec succès ✓' : 'Prêt à démarrer le workflow…')}
-          </span>
+          <span>{currentStep ?? (completed ? 'Workflow terminé avec succès ✓' : 'Prêt à démarrer le workflow…')}</span>
         </div>
 
-        {/* Action buttons */}
+        {/* Buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={onLaunch}
@@ -409,7 +519,9 @@ function OrchestratorCard({ globalStatus, progress, currentStep, elapsedRef, onL
             style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               padding: '11px 0', borderRadius: 12, border: 'none', cursor: running ? 'not-allowed' : 'pointer',
-              background: running ? `linear-gradient(135deg,${C.pink}44,${C.blue}44)` : 'linear-gradient(135deg,#ec4899,#8b5cf6,#3b82f6)',
+              background: running
+                ? `linear-gradient(135deg,${C.pink}44,${C.blue}44)`
+                : 'linear-gradient(135deg,#ec4899,#8b5cf6,#3b82f6)',
               color: '#fff', fontSize: 14, fontWeight: 700,
               opacity: running ? 0.6 : 1,
               boxShadow: running ? 'none' : '0 4px 20px -4px rgba(236,72,153,0.5)',
@@ -444,32 +556,42 @@ function OrchestratorCard({ globalStatus, progress, currentStep, elapsedRef, onL
 
 /* ─────────────────────────────────────────────
    AGENT CARD
-   ag = { status: 'idle'|'running'|'completed', duration: ms }
+   ag.status: 'idle' | 'pending' | 'running' | 'success'
+   ag.duration: elapsed ms (running) or final ms (success)
 ───────────────────────────────────────────── */
 function AgentCard({ def, ag }) {
-  const { emoji, label, name, color, duration: totalDuration, desc } = def;
-  const running   = ag.status === 'running';
-  const completed = ag.status === 'completed';
+  const { emoji, label, name, color, simulatedDuration, desc } = def;
+  const isPending  = ag.status === 'pending';
+  const isRunning  = ag.status === 'running';
+  const isSuccess  = ag.status === 'success';
 
-  // Progress percentage derived from duration field
-  const pct = completed ? 100
-            : running   ? Math.min(100, (ag.duration / totalDuration) * 100)
+  // Per-agent progress derived from ag.duration
+  const pct = isSuccess  ? 100
+            : isRunning  ? Math.min(99, (ag.duration / simulatedDuration) * 100)
+            : isPending  ? 0
             :              0;
 
   // Timer display
   let timerNode;
-  if (running) {
+  if (isPending) {
+    timerNode = (
+      <span style={{ color: C.statusPend, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <span className="blink" style={{ width: 6, height: 6, borderRadius: '50%', background: C.statusPend, display: 'inline-block' }} />
+        Initialisation…
+      </span>
+    );
+  } else if (isRunning) {
     timerNode = (
       <span style={{ display: 'flex', alignItems: 'center', gap: 5, color, fontWeight: 700, fontSize: 13, fontFamily: 'monospace' }}>
         <span className="blink" style={{ width: 6, height: 6, borderRadius: '50%', background: color, display: 'inline-block' }} />
         {fmtS(ag.duration)}
-        <span style={{ color: C.textDim, fontWeight: 400 }}>/ {fmtS(totalDuration)}</span>
+        <span style={{ color: C.textDim, fontWeight: 400 }}>/ {fmtS(simulatedDuration)}</span>
       </span>
     );
-  } else if (completed) {
+  } else if (isSuccess) {
     timerNode = (
       <span style={{ color: C.statusOk, fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-        <CheckCircle2 size={12} /> Completed in {fmtS(ag.duration)}
+        <CheckCircle2 size={12} /> Completed in {fmtS(simulatedDuration)}
       </span>
     );
   } else {
@@ -478,27 +600,35 @@ function AgentCard({ def, ag }) {
     );
   }
 
+  const activeBorder = isPending ? C.statusPend : isRunning ? color : isSuccess ? C.statusOk : C.border;
+
   return (
     <div style={{
       background: C.card,
-      border: `1px solid ${running ? color : completed ? C.statusOk : C.border}`,
+      border: `1px solid ${activeBorder}`,
       borderRadius: 16, padding: '18px 20px',
       position: 'relative', overflow: 'hidden',
-      boxShadow: running ? `0 0 20px -6px ${color}44` : 'none',
+      boxShadow: isRunning ? `0 0 20px -6px ${color}44` : isPending ? `0 0 12px -4px ${C.statusPend}33` : 'none',
       transition: 'border-color 0.4s ease, box-shadow 0.4s ease',
     }}>
-      {/* Top glow line when running */}
-      {running && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${color},transparent)`, animation: 'beam 2s linear infinite' }} />
+      {/* Top glow line */}
+      {(isRunning || isPending) && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+          background: `linear-gradient(90deg,transparent,${isRunning ? color : C.statusPend},transparent)`,
+          animation: 'beam 2s linear infinite',
+        }} />
       )}
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 42, height: 42, borderRadius: 11, background: `${color}18`, border: `1px solid ${color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-            {running
+            {isRunning
               ? <Loader2 size={18} color={color} className="spin" />
-              : <span style={{ filter: ag.status === 'idle' ? 'grayscale(1) opacity(0.35)' : 'none' }}>{emoji}</span>}
+              : isPending
+                ? <Loader2 size={18} color={C.statusPend} className="spin" />
+                : <span style={{ filter: ag.status === 'idle' ? 'grayscale(1) opacity(0.35)' : 'none' }}>{emoji}</span>}
           </div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: C.text, lineHeight: 1.2 }}>{label}</div>
@@ -519,7 +649,6 @@ function AgentCard({ def, ag }) {
 
 /* ─────────────────────────────────────────────
    EXECUTION LOG
-   entry = { id, timestamp, agent, message, logType }
 ───────────────────────────────────────────── */
 function ExecutionLog({ logs }) {
   const bottomRef = useRef(null);
@@ -546,33 +675,32 @@ function ExecutionLog({ logs }) {
           </div>
         ) : (
           logs.map((entry, i) => {
-            const msgColor = LOG_COLORS[entry.logType] ?? C.text;
+            const msgColor   = entry.logType === 'success' ? C.statusOk
+                             : entry.logType === 'error'   ? C.statusErr
+                             : entry.logType === 'warning' ? C.statusWarn
+                             :                               C.text;
             const agentColor = LOG_COLORS[entry.logType] ?? C.statusRun;
-            const ts = entry.timestamp instanceof Date
-              ? entry.timestamp.toTimeString().slice(0, 8)
-              : new Date(entry.timestamp).toTimeString().slice(0, 8);
+            const ts = (entry.timestamp instanceof Date ? entry.timestamp : new Date(entry.timestamp))
+              .toTimeString().slice(0, 8);
+
             return (
               <div
                 key={entry.id}
                 className="slide-in"
                 style={{
-                  display: 'flex', alignItems: 'baseline', gap: 0,
+                  display: 'flex', alignItems: 'baseline',
                   padding: '5px 20px',
                   borderBottom: i < logs.length - 1 ? `1px solid ${C.border}33` : 'none',
                   fontFamily: 'monospace', fontSize: 11, lineHeight: 1.6,
                 }}
               >
-                {/* [HH:MM:SS] */}
                 <span style={{ color: C.textDim, flexShrink: 0, marginRight: 8 }}>[{ts}]</span>
-                {/* [emoji] */}
                 <span style={{ fontSize: 13, flexShrink: 0, marginRight: 6, lineHeight: 1 }}>
                   {AGENT_EMOJI[entry.agent] ?? '🤖'}
                 </span>
-                {/* [Agent] */}
                 <span style={{ color: agentColor, fontWeight: 700, flexShrink: 0, minWidth: 220, marginRight: 8 }}>
                   [{entry.agent}]
                 </span>
-                {/* Message */}
                 <span style={{ color: msgColor }}>{entry.message}</span>
               </div>
             );
@@ -588,133 +716,69 @@ function ExecutionLog({ logs }) {
    ROOT APP
 ───────────────────────────────────────────── */
 export default function App() {
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const startRef  = useRef(null);   // workflow start timestamp
-  const rafRef    = useRef(null);   // requestAnimationFrame id
-  const simRef    = useRef(mkSimState()); // simulation tracking (not in state)
-  const elapsedRef = useRef(0);     // current elapsed ms — read during render
+  const [state, dispatch]   = useReducer(reducer, initialState);
+  const [elapsed, setElapsed] = useState(0);  // display clock (ms)
 
-  /* ── Simulation tick ─────────────────────── */
-  const tick = useCallback(() => {
-    if (!startRef.current) return;
-    const ms  = Date.now() - startRef.current;
-    const sim = simRef.current;
+  const startRef  = useRef(null);  // workflow start Date.now()
+  const signalRef = useRef({ cancelled: false });
+  const clockRef  = useRef(null);  // setInterval id for the header clock
 
-    // Persist elapsed for use in render (UPDATE_PROGRESS will trigger re-render)
-    elapsedRef.current = ms;
-
-    // ── Global progress & step label ──────────
-    const progress = Math.min(100, (ms / T.end) * 100);
-    let currentStep = null;
-    if      (ms < T.p1e) currentStep = 'Step 1/4 — Collecte des sources macro-économiques';
-    else if (ms < T.p2e) currentStep = 'Step 2/4 — Analyse comparative multi-sources';
-    else if (ms < T.p3e) currentStep = 'Step 3/4 — Génération Dashboard TSX + Rapport PDF';
-    else if (ms < T.end) currentStep = 'Step 4/4 — Envoi email board@veillemacro.io';
-
-    dispatch({ type: 'UPDATE_PROGRESS', progress, currentStep });
-
-    // ── Per-agent updates ─────────────────────
-    for (const id of ORDER) {
-      const def = AGENTS[id];
-
-      // Agent starts
-      if (ms >= def.start && ms < def.end && !sim.started[id]) {
-        sim.started[id] = true;
-        dispatch({ type: 'UPDATE_AGENT', agent: id, status: 'running', duration: 0 });
-        dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: 'Orchestrateur', message: `→ ${def.name} démarré`, logType: 'info' });
-      }
-
-      // Agent running — update duration
-      if (ms >= def.start && ms < def.end && sim.started[id] && !sim.completed[id]) {
-        dispatch({ type: 'UPDATE_AGENT', agent: id, status: 'running', duration: ms - def.start });
-
-        // Step log entries
-        const pct = ((ms - def.start) / def.duration) * 100;
-        const si  = stepForPct(pct, def.steps.length);
-        if (si !== sim.steps[id] && si > 0) {
-          sim.steps[id] = si;
-          dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: def.name, message: def.steps[si - 1], logType: 'info' });
-        }
-      }
-
-      // Agent completes
-      if (ms >= def.end && !sim.completed[id]) {
-        sim.completed[id] = true;
-        dispatch({ type: 'UPDATE_AGENT', agent: id, status: 'completed', duration: def.duration });
-        const doneMsg = {
-          collector: '✓ Collecte terminée — 2 847 documents indexés',
-          synthesis: '✓ Synthèse générée — 14 signaux macro détectés',
-          dashboard: '✓ Dashboard TSX généré — 12 composants, 847 KB',
-          pdf:       '✓ Rapport PDF généré — 48 pages, 3.2 MB',
-        }[id];
-        dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: def.name, message: doneMsg, logType: 'success' });
-      }
-    }
-
-    // ── Phase transitions (orchestrator logs) ─
-    if (ms >= T.p2s && ms < T.p2s + 200 && !sim._p2logged) {
-      sim._p2logged = true;
-      dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: 'Orchestrateur', message: 'Transition Phase 2 → comparative_synthesis_agent', logType: 'info' });
-    }
-    if (ms >= T.p3s && ms < T.p3s + 200 && !sim._p3logged) {
-      sim._p3logged = true;
-      dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: 'Orchestrateur', message: 'Fork parallèle → dashboard_generator + pdf_report_generator', logType: 'info' });
-    }
-
-    // ── Email ─────────────────────────────────
-    if (ms >= T.p4s && !sim.emailDone) {
-      sim.emailDone = true;
-      dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: 'Orchestrateur', message: '📧 Email envoyé — board@veillemacro.io', logType: 'success' });
-    }
-
-    // ── Workflow complete ─────────────────────
-    if (ms >= T.end && !sim.workflowDone) {
-      sim.workflowDone = true;
-      dispatch({ type: 'COMPLETE_WORKFLOW' });
-      dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: 'Orchestrateur', message: `Workflow MacroSynthAI complété en ${(ms / 1000).toFixed(1)}s`, logType: 'success' });
-      return; // stop loop
-    }
-
-    rafRef.current = requestAnimationFrame(tick);
-  }, []); // dispatch is stable — no deps needed
-
-  /* ── Handlers ────────────────────────────── */
-  const handleLaunch = useCallback(() => {
+  /* ── Launch ────────────────────────────── */
+  const handleLaunch = useCallback(async () => {
     if (state.globalStatus === 'running') return;
-    simRef.current  = mkSimState();
-    elapsedRef.current = 0;
-    dispatch({ type: 'START_WORKFLOW' });
-    dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: 'Orchestrateur', message: 'Workflow MacroSynthAI démarré — Phase 1 initialisée', logType: 'info' });
-    startRef.current = Date.now();
-    rafRef.current = requestAnimationFrame(tick);
-  }, [state.globalStatus, tick]);
 
+    // Fresh signal for this run
+    const signal = { cancelled: false };
+    signalRef.current = signal;
+
+    // Start display clock
+    startRef.current = Date.now();
+    setElapsed(0);
+    clockRef.current = setInterval(() => {
+      setElapsed(Date.now() - startRef.current);
+    }, 100);
+
+    dispatch({ type: 'START_WORKFLOW' });
+
+    await startWorkflow(dispatch, signal);
+
+    // Stop clock when workflow ends (success or cancel)
+    clearInterval(clockRef.current);
+  }, [state.globalStatus]);
+
+  /* ── Reset ─────────────────────────────── */
   const handleReset = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    startRef.current   = null;
-    elapsedRef.current = 0;
-    simRef.current     = mkSimState();
+    signalRef.current.cancelled = true; // interrupt any sleepC
+    clearInterval(clockRef.current);
+    startRef.current = null;
+    setElapsed(0);
     dispatch({ type: 'RESET' });
   }, []);
 
-  useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
+  /* ── Cleanup on unmount ─────────────────── */
+  useEffect(() => () => {
+    signalRef.current.cancelled = true;
+    clearInterval(clockRef.current);
+  }, []);
 
-  /* ── Destructure state ───────────────────── */
   const { globalStatus, lastRun, progress, currentStep, agents, logs } = state;
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: "'SF Mono','Fira Code','Consolas',monospace" }}>
 
-      <AppHeader globalStatus={globalStatus} lastRun={lastRun} elapsedRef={elapsedRef} />
+      <AppHeader
+        globalStatus={globalStatus}
+        lastRun={lastRun}
+        elapsed={elapsed}
+      />
 
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-        {/* Orchestrator */}
         <OrchestratorCard
           globalStatus={globalStatus}
           progress={progress}
           currentStep={currentStep}
-          elapsedRef={elapsedRef}
+          elapsed={elapsed}
           onLaunch={handleLaunch}
           onReset={handleReset}
         />
@@ -729,7 +793,6 @@ export default function App() {
         {/* PDF alone */}
         <AgentCard def={AGENTS.pdf} ag={agents.pdf} />
 
-        {/* Log */}
         <ExecutionLog logs={logs} />
 
         <div style={{ textAlign: 'center', color: C.textDim, fontSize: 10, letterSpacing: '0.05em', paddingBottom: 8 }}>
