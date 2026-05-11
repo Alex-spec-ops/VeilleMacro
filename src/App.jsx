@@ -1,32 +1,40 @@
 import React, { useReducer, useEffect, useRef, useCallback } from 'react';
 import {
-  Play, RotateCcw, CheckCircle2, Loader2, Database, Brain,
-  LayoutDashboard, FileText, Mail, Zap, Clock, Activity,
-  ArrowRight, Server, ChevronRight, AlertCircle, Send,
-  TrendingUp, Cpu, GitMerge, Radio,
+  Play, RotateCcw, CheckCircle2, Loader2,
+  Mail, Activity, Send, Cpu, GitMerge, Radio,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
    CONSTANTS
 ───────────────────────────────────────────── */
 const C = {
-  bg:          '#070b14',
-  surface:     '#0d1220',
-  card:        '#111827',
-  cardHover:   '#141d2e',
-  border:      'rgba(255,255,255,0.07)',
-  borderActive:'rgba(99,102,241,0.5)',
-  text:        '#e2e8f0',
-  textMuted:   '#6b7280',
-  textDim:     '#374151',
-  indigo:      '#6366f1',
-  violet:      '#8b5cf6',
-  pink:        '#ec4899',
-  orange:      '#f97316',
-  green:       '#10b981',
-  yellow:      '#f59e0b',
-  red:         '#ef4444',
+  // Backgrounds
+  bg:          '#0f172a',   // slate-900
+  surface:     '#0b1120',
+  card:        '#1e293b',   // slate-800
+  cardHover:   '#263348',
+  // Borders
+  border:      '#334155',   // slate-700
+  borderActive:'rgba(59,130,246,0.5)',
+  // Text
+  text:        '#f1f5f9',   // slate-100
+  textMuted:   '#94a3b8',   // slate-400
+  textDim:     '#475569',   // slate-600
+  // Status
+  statusIdle:  '#6b7280',   // gray-500
+  statusPend:  '#f59e0b',   // amber-500
+  statusRun:   '#3b82f6',   // blue-500
+  statusOk:    '#10b981',   // green-500
+  statusErr:   '#ef4444',   // red-500
+  // Agent brand colors
+  blue:        '#3b82f6',   // collector
+  violet:      '#8b5cf6',   // synthesis
+  green:       '#10b981',   // dashboard
+  amber:       '#f59e0b',   // pdf
+  pink:        '#ec4899',   // orchestrator
+  // Utility
   sky:         '#0ea5e9',
+  red:         '#ef4444',
 };
 
 /* Workflow timeline (ms):
@@ -54,8 +62,8 @@ const AGENT_DEFS = {
     duration: 25_000,
     start:    TIMELINE.phase1Start,
     end:      TIMELINE.phase1End,
-    Icon:     Database,
-    color:    C.indigo,
+    emoji:    '🔍',
+    color:    C.blue,
     phase:    1,
     desc:     'Collecte et agrège les sources macro-économiques mondiales',
     steps: [
@@ -75,7 +83,7 @@ const AGENT_DEFS = {
     duration: 12_000,
     start:    TIMELINE.phase2Start,
     end:      TIMELINE.phase2End,
-    Icon:     Brain,
+    emoji:    '⚖️',
     color:    C.violet,
     phase:    2,
     desc:     'Analyse et synthèse comparative multi-sources avec LLM',
@@ -95,8 +103,8 @@ const AGENT_DEFS = {
     duration: 18_000,
     start:    TIMELINE.phase3Start,
     end:      TIMELINE.phase3Start + 18_000,
-    Icon:     LayoutDashboard,
-    color:    C.pink,
+    emoji:    '📊',
+    color:    C.green,
     phase:    3,
     desc:     'Génération du dashboard React/TSX interactif avec Recharts',
     steps: [
@@ -115,8 +123,8 @@ const AGENT_DEFS = {
     duration: 16_000,
     start:    TIMELINE.phase3Start,
     end:      TIMELINE.phase3Start + 16_000,
-    Icon:     FileText,
-    color:    C.orange,
+    emoji:    '📄',
+    color:    C.amber,
     phase:    3,
     desc:     'Génération du rapport PDF exécutif haute qualité',
     steps: [
@@ -161,7 +169,7 @@ function reducer(state, action) {
         workflow:     'running',
         phase:        1,
         orchestrator: { status: 'running', task: 'Démarrage Phase 1 — Collecte sources…' },
-        logs: [logEntry('Orchestrateur', 'Workflow démarré — Phase 1 initialisée', C.indigo)],
+        logs: [logEntry('Orchestrateur', 'Workflow démarré — Phase 1 initialisée', C.pink)],
       };
 
     case 'TICK': {
@@ -187,14 +195,14 @@ function reducer(state, action) {
           stepIdx,
         };
         if (changed && stepIdx > 0)
-          logs.push(logEntry('macro_research_collector', col.steps[stepIdx - 1], C.indigo));
+          logs.push(logEntry('macro_research_collector', col.steps[stepIdx - 1], C.blue));
       }
       if (elapsed >= col.end && newAgents.collector.status !== 'completed') {
         newAgents.collector = { status: 'completed', progress: 100, elapsed: col.duration, currentStep: col.steps.at(-1), stepIdx: col.steps.length - 1 };
         logs.push(logEntry('macro_research_collector', '✓ Collecte terminée — 2 847 documents indexés', C.green));
         phase    = 2;
         orchTask = 'Démarrage Phase 2 — Analyse comparative…';
-        logs.push(logEntry('Orchestrateur', 'Transition Phase 2 → comparative_synthesis_agent', C.violet));
+        logs.push(logEntry('Orchestrateur', 'Transition Phase 2 → comparative_synthesis_agent', C.pink));
       }
 
       // ── Phase 2: synthesis ──────────────────
@@ -320,7 +328,7 @@ const S = {
     gap:         0,
   },
   header: {
-    background:   'rgba(13,18,32,0.95)',
+    background:   'rgba(15,23,42,0.96)',
     borderBottom: `1px solid ${C.border}`,
     backdropFilter: 'blur(12px)',
     position:     'sticky',
@@ -388,9 +396,11 @@ const S = {
 /* Status Badge */
 function StatusBadge({ status }) {
   const cfg = {
-    idle:      { label: 'En attente',  color: C.textMuted,  bg: '#1f2937' },
-    running:   { label: 'En cours',    color: C.indigo,     bg: '#1e1b4b' },
-    completed: { label: 'Terminé',     color: C.green,      bg: '#064e3b' },
+    idle:      { label: 'En attente',  color: C.statusIdle, bg: '#1f2937'  },
+    running:   { label: 'En cours',    color: C.statusRun,  bg: '#172554'  },
+    completed: { label: 'Terminé',     color: C.statusOk,   bg: '#064e3b'  },
+    pending:   { label: 'En attente',  color: C.statusPend, bg: '#451a03'  },
+    error:     { label: 'Erreur',      color: C.statusErr,  bg: '#450a0a'  },
   };
   const { label, color, bg } = cfg[status] ?? cfg.idle;
   return (
@@ -423,7 +433,7 @@ function ProgressBar({ pct, color, running }) {
 
 /* Agent Card */
 function AgentCard({ def, state: ag, totalElapsed }) {
-  const { Icon, name, label, color, duration, desc, steps } = def;
+  const { emoji, name, label, color, duration, desc, steps } = def;
   const running   = ag.status === 'running';
   const completed = ag.status === 'completed';
   const active    = running || completed;
@@ -466,9 +476,12 @@ function AgentCard({ def, state: ag, totalElapsed }) {
             background:`${color}18`,
             border:`1px solid ${color}44`,
             display:'flex', alignItems:'center', justifyContent:'center',
-            flexShrink:0,
+            flexShrink:0, position:'relative',
           }}>
-            <Icon size={18} color={color} className={running ? 'spin' : ''} />
+            {running
+              ? <Loader2 size={18} color={color} className="spin" />
+              : <span style={{ fontSize:18, lineHeight:1, filter: ag.status === 'idle' ? 'grayscale(1) opacity(0.4)' : 'none' }}>{emoji}</span>
+            }
           </div>
           <div>
             <div style={{ fontSize:13, fontWeight:700, color: C.text, letterSpacing:'0.01em' }}>{label}</div>
@@ -561,13 +574,13 @@ function OrchestratorPanel({ state: orch, phase, totalElapsed, workflow }) {
 
   return (
     <div style={{
-      background:   `linear-gradient(135deg, #0d1220 0%, #111827 100%)`,
-      border:       `1px solid ${running ? C.indigo + '66' : completed ? C.green + '66' : C.border}`,
+      background:   `linear-gradient(135deg, ${C.bg} 0%, ${C.card} 100%)`,
+      border:       `1px solid ${running ? C.pink + '66' : completed ? C.statusOk + '66' : C.border}`,
       borderRadius: 20,
       padding:      '24px 28px',
       position:     'relative',
       overflow:     'hidden',
-      boxShadow:    running ? `0 0 40px -8px ${C.indigo}44` : 'none',
+      boxShadow:    running ? `0 0 40px -8px ${C.pink}44` : 'none',
       transition:   'box-shadow 0.5s ease',
     }}>
       {/* Background grid decoration */}
@@ -585,16 +598,16 @@ function OrchestratorPanel({ state: orch, phase, totalElapsed, workflow }) {
             {running && (
               <span className="pulse-ring" style={{
                 position:'absolute', inset:-6, borderRadius:'50%',
-                border:`2px solid ${C.indigo}`,
+                border:`2px solid ${C.pink}`,
               }} />
             )}
             <div style={{
               width:52, height:52, borderRadius:14,
-              background:    running   ? `linear-gradient(135deg, ${C.indigo}33, ${C.violet}33)` : '#1f2937',
-              border:        `1.5px solid ${running ? C.indigo + '88' : completed ? C.green + '66' : C.border}`,
+              background:    running   ? `linear-gradient(135deg, ${C.pink}33, ${C.violet}33)` : `${C.border}22`,
+              border:        `1.5px solid ${running ? C.pink + '88' : completed ? C.statusOk + '66' : C.border}`,
               display:       'flex', alignItems:'center', justifyContent:'center',
             }}>
-              <GitMerge size={22} color={running ? C.indigo : completed ? C.green : C.textMuted} />
+              <GitMerge size={22} color={running ? C.pink : completed ? C.statusOk : C.textMuted} />
             </div>
           </div>
           <div>
@@ -603,9 +616,9 @@ function OrchestratorPanel({ state: orch, phase, totalElapsed, workflow }) {
             </div>
             <div className={running ? 'shimmer-text' : ''} style={{
               fontSize:18, fontWeight:700,
-              color: running ? undefined : completed ? C.green : C.text,
+              color: running ? undefined : completed ? C.statusOk : C.text,
             }}>
-              macro_synthesis_orchestrator
+              macro_synthesis_orchestrator  🎯
             </div>
             <div style={{ fontSize:12, color:C.textMuted, marginTop:3 }}>
               {orch.task}
@@ -619,9 +632,9 @@ function OrchestratorPanel({ state: orch, phase, totalElapsed, workflow }) {
           <div style={{ textAlign:'center' }}>
             <div style={{ fontSize:10, color:C.textMuted, letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4 }}>Phase</div>
             <div style={{
-              fontSize:13, fontWeight:700, color: phase > 0 ? C.indigo : C.textDim,
-              background: phase > 0 ? `${C.indigo}18` : 'transparent',
-              border: `1px solid ${phase > 0 ? C.indigo + '44' : C.border}`,
+              fontSize:13, fontWeight:700, color: phase > 0 ? C.statusRun : C.textDim,
+              background: phase > 0 ? `${C.statusRun}18` : 'transparent',
+              border: `1px solid ${phase > 0 ? C.statusRun + '44' : C.border}`,
               borderRadius:8, padding:'4px 12px',
             }}>
               {phase > 0 ? phaseLabels[phase] : 'Inactif'}
@@ -632,7 +645,7 @@ function OrchestratorPanel({ state: orch, phase, totalElapsed, workflow }) {
             <div style={{ fontSize:10, color:C.textMuted, letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4 }}>Temps écoulé</div>
             <div style={{
               fontSize:20, fontWeight:700, fontFamily:'monospace',
-              color: running ? C.text : completed ? C.green : C.textDim,
+              color: running ? C.text : completed ? C.statusOk : C.textDim,
               letterSpacing:'0.05em',
             }}>
               {formatClock(totalElapsed)}
@@ -649,10 +662,10 @@ function OrchestratorPanel({ state: orch, phase, totalElapsed, workflow }) {
 /* Workflow Pipeline SVG Diagram */
 function PipelineDiagram({ agentStates, emailSent, workflow }) {
   const nodes = [
-    { id:'collector', label:'Collector',  color: C.indigo, x:60  },
+    { id:'collector', label:'Collector',  color: C.blue,   x:60  },
     { id:'synthesis', label:'Synthesis',  color: C.violet, x:220 },
-    { id:'dashboard', label:'Dashboard',  color: C.pink,   x:380, y:-30 },
-    { id:'pdf',       label:'PDF Report', color: C.orange, x:380, y:30  },
+    { id:'dashboard', label:'Dashboard',  color: C.green,  x:380, y:-30 },
+    { id:'pdf',       label:'PDF Report', color: C.amber,  x:380, y:30  },
     { id:'email',     label:'Email',      color: C.sky,    x:540 },
   ];
 
@@ -678,7 +691,7 @@ function PipelineDiagram({ agentStates, emailSent, workflow }) {
       <div style={{ display:'flex', alignItems:'center', gap:0, overflowX:'auto', paddingBottom:4 }}>
         {/* Collector */}
         <PipelineNode id="collector" def={AGENT_DEFS.collector} status={getStatus('collector')} />
-        <PipelineArrow active={isActive('collector')} color={C.indigo} />
+        <PipelineArrow active={isActive('collector')} color={C.blue} />
 
         {/* Synthesis */}
         <PipelineNode id="synthesis" def={AGENT_DEFS.synthesis} status={getStatus('synthesis')} />
@@ -704,9 +717,9 @@ function PipelineDiagram({ agentStates, emailSent, workflow }) {
       {/* Legend */}
       <div style={{ display:'flex', gap:16, marginTop:16, flexWrap:'wrap' }}>
         {[
-          { label:'Inactif',    color:C.textDim  },
-          { label:'En cours',   color:C.indigo   },
-          { label:'Terminé',    color:C.green    },
+          { label:'Inactif',    color:C.textDim    },
+          { label:'En cours',   color:C.statusRun  },
+          { label:'Terminé',    color:C.statusOk   },
           { label:'Parallèle',  color:C.pink, extra:'fork ∥' },
         ].map(({ label, color, extra }) => (
           <div key={label} style={{ display:'flex', alignItems:'center', gap:5, fontSize:10, color:C.textMuted }}>
@@ -720,12 +733,13 @@ function PipelineDiagram({ agentStates, emailSent, workflow }) {
 }
 
 function PipelineNode({ id, def, status, compact }) {
-  const { Icon, label, color } = def;
+  const { emoji, label, color } = def;
   const running   = status === 'running';
   const completed = status === 'completed';
   const active    = running || completed;
-  const nodeColor = completed ? C.green : running ? color : C.textDim;
+  const nodeColor = completed ? C.statusOk : running ? color : C.textDim;
   const sz        = compact ? 36 : 44;
+  const iconSz    = compact ? 16 : 20;
 
   return (
     <div style={{
@@ -751,8 +765,10 @@ function PipelineNode({ id, def, status, compact }) {
           boxShadow:    running ? `0 0 16px -2px ${color}55` : 'none',
         }}>
           {completed
-            ? <CheckCircle2 size={compact ? 16 : 20} color={C.green} />
-            : <Icon size={compact ? 16 : 20} color={nodeColor} className={running ? 'spin' : ''} />
+            ? <CheckCircle2 size={iconSz} color={C.statusOk} />
+            : running
+              ? <Loader2 size={iconSz} color={color} className="spin" />
+              : <span style={{ fontSize: iconSz, lineHeight:1, filter:'grayscale(1) opacity(0.4)' }}>{emoji}</span>
           }
         </div>
       </div>
@@ -933,12 +949,12 @@ function StatsBar({ state }) {
   const totalPct       = Object.values(agents).reduce((s, a) => s + a.progress, 0) / 4;
 
   const stats = [
-    { label:'Agents actifs',    value: runningCount,            color: C.indigo },
-    { label:'Agents complétés', value: `${completedCount} / 4`, color: C.green  },
-    { label:'Progression',      value: `${totalPct.toFixed(0)}%`, color: C.violet },
+    { label:'Agents actifs',    value: runningCount,              color: C.statusRun  },
+    { label:'Agents complétés', value: `${completedCount} / 4`,  color: C.statusOk   },
+    { label:'Progression',      value: `${totalPct.toFixed(0)}%`, color: C.violet     },
     { label:'Email envoyé',     value: emailSent ? 'Oui ✓' : 'Non', color: emailSent ? C.sky : C.textMuted },
-    { label:'Temps total',      value: formatClock(totalElapsed), color: C.text   },
-    { label:'Statut',           value: workflow === 'completed' ? 'Terminé ✓' : workflow === 'running' ? 'En cours' : 'Inactif', color: workflow === 'completed' ? C.green : workflow === 'running' ? C.indigo : C.textMuted },
+    { label:'Temps total',      value: formatClock(totalElapsed), color: C.text       },
+    { label:'Statut',           value: workflow === 'completed' ? 'Terminé ✓' : workflow === 'running' ? 'En cours' : 'Inactif', color: workflow === 'completed' ? C.statusOk : workflow === 'running' ? C.statusRun : C.textMuted },
   ];
 
   return (
@@ -1055,8 +1071,8 @@ export default function App() {
 
           {running && (
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span className="blink" style={{ width:8, height:8, borderRadius:'50%', background:C.indigo, display:'inline-block' }} />
-              <span style={{ fontSize:12, color:C.indigo, fontFamily:'monospace', fontWeight:600 }}>
+              <span className="blink" style={{ width:8, height:8, borderRadius:'50%', background:C.statusRun, display:'inline-block' }} />
+              <span style={{ fontSize:12, color:C.statusRun, fontFamily:'monospace', fontWeight:600 }}>
                 {formatClock(totalElapsed)}
               </span>
             </div>
