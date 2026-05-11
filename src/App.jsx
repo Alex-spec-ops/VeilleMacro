@@ -36,14 +36,15 @@ const AGENTS = {
     simulatedDuration: 25_000,
     desc: 'Collecte et agrège les sources macro-économiques mondiales via APIs et scraping.',
     logs: [
-      'Initialisation des connecteurs API…',
-      'Connexion Bloomberg Terminal, Reuters…',
-      'Collecte données Fed, BCE, BNS, BoJ…',
-      'Scraping actualités (47 sources)…',
-      'Agrégation corpus documentaire…',
-      'Déduplication & validation croisée…',
+      '🔍 Searching for Jurrien Timmer publications...',
+      '✅ Found Timmer publication (15/04/2026)',
+      '🔍 Searching for Michael Cembalest publications...',
+      '✅ Found EOTM publication (10/04/2026)',
+      '🔍 Searching for Jeremy Grantham...',
+      '❌ No recent publication from Grantham',
+      '📊 Analysis: 4/6 sources collected successfully',
     ],
-    doneMsg: '✓ Collecte terminée — 2 847 documents indexés',
+    doneMsg: '✅ Collector completed — 4/6 sources collected',
   },
   synthesis: {
     id: 'synthesis', name: 'comparative_synthesis_agent',
@@ -51,13 +52,14 @@ const AGENTS = {
     simulatedDuration: 12_000,
     desc: 'Analyse comparative multi-sources avec LLM — détection signaux macro.',
     logs: [
-      'Chargement corpus (2 847 documents)…',
-      'Analyse de sentiment marchés financiers…',
-      'Comparaison indicateurs YoY / QoQ…',
-      'Détection signaux macro-économiques…',
-      'Scoring divergences inter-banques centrales…',
+      '🔄 Analyzing convergences across sources...',
+      '✅ Identified 3 strategic convergences',
+      '🔄 Analyzing divergences...',
+      '✅ Identified 2 notable divergences',
+      '💡 Extracted 5 new investment ideas',
+      '⚠️ Aggregated 4 risk signals',
     ],
-    doneMsg: '✓ Synthèse générée — 14 signaux macro détectés',
+    doneMsg: '✅ Synthesis completed — 5 ideas, 4 risk signals',
   },
   dashboard: {
     id: 'dashboard', name: 'dashboard_generator_agent',
@@ -65,13 +67,14 @@ const AGENTS = {
     simulatedDuration: 18_000,
     desc: 'Génération du dashboard React/TSX interactif avec visualisations Recharts.',
     logs: [
-      'Structuration des données de visualisation…',
-      'Génération composants Recharts (12 graphiques)…',
-      'Compilation dashboard TSX…',
-      'Tree-shaking & optimisation bundle…',
-      'Injection données temps-réel…',
+      '⚙️ Loading dashboard template...',
+      '📝 Generating TSX code...',
+      '🎨 Applying shadcn/ui components...',
+      '📊 Embedding synthesis data...',
+      '✅ Dashboard generated (1247 lines)',
+      '🚀 Deploying to Dust Frame...',
     ],
-    doneMsg: '✓ Dashboard TSX généré — 12 composants, 847 KB',
+    doneMsg: '✅ Dashboard deployed — 1247 lines, Dust Frame',
   },
   pdf: {
     id: 'pdf', name: 'pdf_report_generator',
@@ -79,13 +82,14 @@ const AGENTS = {
     simulatedDuration: 16_000,
     desc: 'Génération du rapport PDF exécutif haute qualité, 48 pages, signatures numériques.',
     logs: [
-      'Chargement template LaTeX professionnel…',
-      'Injection données analytiques…',
-      'Rendu graphiques haute résolution (300 dpi)…',
-      'Compilation PDF/A-2b…',
-      'Signature numérique & métadonnées…',
+      '📄 Initializing ReportLab...',
+      '📝 Generating Page 1: Executive Summary...',
+      '📊 Rendering dashboard table...',
+      '📝 Generating Page 2: Convergences...',
+      '📝 Generating Page 3: Risks & Authors...',
+      '✅ PDF generated (3 pages, 245KB)',
     ],
-    doneMsg: '✓ Rapport PDF généré — 48 pages, 3.2 MB',
+    doneMsg: '✅ PDF report generated — 3 pages, 245 KB',
   },
 };
 
@@ -213,6 +217,17 @@ function sleepC(ms, signal) {
 }
 
 /**
+ * Infer log type from message prefix emoji.
+ * ✅ → success | ❌ → error | ⚠️ → warning | anything else → info
+ */
+function inferLogType(msg) {
+  if (msg.startsWith('✅')) return 'success';
+  if (msg.startsWith('❌')) return 'error';
+  if (msg.startsWith('⚠️')) return 'warning';
+  return 'info';
+}
+
+/**
  * runAgent(agentId, dispatch, signal, config?)
  *
  * Lifecycle:
@@ -246,7 +261,7 @@ async function runAgent(agentId, dispatch, signal, config = {}) {
   const logTimers = def.logs.map((msg, i) =>
     setTimeout(() => {
       if (signal.cancelled) return;
-      dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: def.name, message: msg, logType: 'info' });
+      dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: def.name, message: msg, logType: inferLogType(msg) });
     }, stepDelay * (i + 1)),
   );
 
@@ -267,7 +282,7 @@ async function runAgent(agentId, dispatch, signal, config = {}) {
   dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'success', duration: def.simulatedDuration });
   dispatch({
     type: 'ADD_LOG', timestamp: new Date(),
-    agent: def.name, message: def.doneMsg, logType: 'success',
+    agent: def.name, message: def.doneMsg, logType: inferLogType(def.doneMsg),
   });
 }
 
