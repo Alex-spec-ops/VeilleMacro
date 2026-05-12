@@ -102,32 +102,95 @@ const AGENTS = {
   dashboard: {
     id: 'dashboard', name: 'dashboard_generator_agent',
     label: 'Dashboard TSX', emoji: '📊', color: C.green,
-    simulatedDuration: 18_000,
-    desc: 'Génération du dashboard React/TSX interactif avec visualisations Recharts.',
+    simulatedDuration: 32_000,
+    desc: 'Génère deux livrables : composant TSX shadcn/ui (Frame Dust) + fichier HTML autonome identique pixel-perfect.',
     logs: [
-      '⚙️ Loading dashboard template...',
-      '📝 Generating TSX code...',
-      '🎨 Applying shadcn/ui components...',
-      '📊 Embedding synthesis data...',
-      '✅ Dashboard generated (1247 lines)',
-      '🚀 Deploying to Dust Frame...',
+      // ── Parsing input ─────────────────────────────────────────────
+      '📥 Input received — synthesis_data (5 sections) + individual_analyses (14 auteurs)',
+      '🔄 Building tab inventory: "Synthèse" · "Dashboard" · 14 author tabs (priority order)…',
+      '✅ Tab plan validated — 16 tabs total · Timmer [1] … Buffett [14]',
+
+      // ── Livrable 1 : TSX Frame Dust ───────────────────────────────
+      '📝 [TSX] Scaffolding MacroSynthAIDashboard component…',
+      '📝 [TSX] Imports: React · useState · Card · CardContent · CardHeader · CardTitle · Badge',
+
+      // Header
+      '📝 [TSX][Header] "MacroSynthAI — Note de Recherche CIO" · badges "14 sources analysées" + "Usage interne"',
+
+      // Tab navigation
+      '📝 [TSX][Nav] Generating tab navigation — rounded-none · border-b-2 · 16 tabs…',
+
+      // Onglet Synthèse
+      '📝 [TSX][Tab:Synthèse] Section Vue d\'ensemble — macro_context + Badge sentiment "Mitigé" (variant=secondary)',
+      '📝 [TSX][Tab:Synthèse] Section Convergences — tableau 5 lignes × 4 colonnes (Thème·Consensus·Auteurs·Implication)',
+      '📝 [TSX][Tab:Synthèse] Section Divergences — tableau 3 lignes × 6 colonnes (Theme·PosA·AuteursA·PosB·AuteursB·Arbitrage)',
+      '📝 [TSX][Tab:Synthèse] Section Nouvelles idées — <ol> 4 items · format bold-idea + italic-rationale + Badge auteur',
+      '📝 [TSX][Tab:Synthèse] Section Risques agrégés — <ul> 4 items · sévérité 🔴🟠 + badge "Mentionné par X auteurs"',
+
+      // Onglet Dashboard (matrice)
+      '📝 [TSX][Tab:Dashboard] Building 11×16 positioning matrix — 11 thèmes × (14 auteurs + col Consensus)…',
+      '📝 [TSX][Tab:Dashboard] Mapping asset_class_positioning → stances (Bull🟢 · Neutre🟡 · Bear🔴 · —)…',
+      '📝 [TSX][Tab:Dashboard] Computing consensus column — ≥50% Bull→🟢 · ≥50% Bear→🔴 · else→🟡…',
+      '✅ [TSX][Tab:Dashboard] Matrix complete — tooltips title= on all stance cells',
+
+      // Onglets auteurs
+      '📝 [TSX][Author tabs] Generating 14 author tabs (5 sections each: header · résumé · key_takeaways · positioning · contrarian)…',
+      '✅ [TSX][Author tabs] 14 × 5 = 70 Card sections generated · rounded-none · p-6 uniform padding',
+
+      // Finalisation TSX
+      '✅ [TSX] MacroSynthAIDashboard.tsx complete — 1 843 lines · syntax validated',
+      '🚀 [TSX] Deploying to Dust Frame…',
+      '✅ [TSX] Frame Dust live — interactive render confirmed',
+
+      // ── Livrable 2 : HTML autonome ────────────────────────────────
+      '📝 [HTML] Scaffolding macrosynth_dashboard.html — CDN React 18 · ReactDOM · Babel standalone · Tailwind CDN',
+      '📝 [HTML] Defining shadcn/ui polyfills: Card · CardHeader · CardTitle · CardContent · Badge (rounded-none)',
+      '📝 [HTML] Injecting JSX from Frame Dust into <script type="text/babel">…',
+      '📝 [HTML] ReactDOM.createRoot(#root).render(MacroSynthAIDashboard)…',
+      '✅ [HTML] macrosynth_dashboard.html generated — 2 107 lines · no external deps at runtime',
+      '✅ [HTML] file_generation tool called — file attached to conversation',
     ],
-    doneMsg: '✅ Dashboard deployed — 1247 lines, Dust Frame',
+    doneMsg: '✅ Dashboard deployed — TSX 1 843 lines (Dust Frame) + HTML 2 107 lines (standalone)',
   },
   pdf: {
     id: 'pdf', name: 'pdf_report_generator',
     label: 'Rapport PDF', emoji: '📄', color: C.amber,
-    simulatedDuration: 16_000,
-    desc: 'Génération du rapport PDF exécutif haute qualité, 48 pages, signatures numériques.',
+    simulatedDuration: 26_000,
+    desc: 'Génère un PDF exécutif 3 pages A4 via ReportLab (Python) : dashboard thématique, convergences, risques agrégés.',
     logs: [
-      '📄 Initializing ReportLab...',
-      '📝 Generating Page 1: Executive Summary...',
-      '📊 Rendering dashboard table...',
-      '📝 Generating Page 2: Convergences...',
-      '📝 Generating Page 3: Risks & Authors...',
-      '✅ PDF generated (3 pages, 245KB)',
+      // ── Étape 1 : Préparation des données ─────────────────────────
+      '📥 Input received — synthesis_data (14 sources) + individual_analyses array',
+      '🔄 [Étape 1] Extracting Page 1 data: overview · sentiment · positioning matrix (8 classes × 14 auteurs)…',
+      '🔄 [Étape 1] Extracting Page 2 data: convergences (top 4) · divergences (top 3) · new ideas (top 5)…',
+      '🔄 [Étape 1] Extracting Page 3 data: risks sorted by severity · author grid (top 6 auteurs)…',
+      '✅ [Étape 1] Data preparation complete — 3 pages structured',
+
+      // ── Étape 2 : Génération du script Python ─────────────────────
+      '📝 [Étape 2] Scaffolding generate_pdf.py in /home/claude/…',
+      '📝 [Étape 2] Imports: reportlab.platypus · SimpleDocTemplate · Table · TableStyle · Paragraph · PageBreak',
+      '📝 [Étape 2] ParagraphStyles defined — h1:18pt · h2:14pt · h3:12pt · body:9pt TA_JUSTIFY · footer:7pt italic',
+      '📝 [Étape 2] Page 1 — Header "MacroSynthAI" · badge "14 sources institutionnelles" · sentiment "Mitigé" #d97706',
+      '📝 [Étape 2] Page 1 — Dashboard table 8×16: stances Bull🟢/Neutre🟡/Bear🔴 · initiales T·C·P·M·As·El·Ro·Bu',
+      '📝 [Étape 2] Page 2 — Convergences table 4 rows (sorted by aligned_authors count)…',
+      '📝 [Étape 2] Page 2 — Divergences table 3 rows · Nouvelles idées <ol> 5 items…',
+      '📝 [Étape 2] Page 3 — Risks list sorted Élevé→Moyen · author grid 2-col 6 auteurs…',
+      '📝 [Étape 2] Page footer callback: "MacroSynthAI — Usage interne · Page X/3" — TA_CENTER · #6b7280',
+      '✅ [Étape 2] generate_pdf.py written — 387 lines · border=0 on all TableStyles',
+
+      // ── Étape 3 : Installation & exécution ────────────────────────
+      '⚙️ [Étape 3] pip install reportlab --break-system-packages…',
+      '✅ [Étape 3] reportlab 4.2.5 installed',
+      '⚙️ [Étape 3] python3 generate_pdf.py…',
+      '✅ [Étape 3] Page 1/3 rendered — Synthèse exécutive + dashboard thématique',
+      '✅ [Étape 3] Page 2/3 rendered — Convergences · divergences · nouvelles idées',
+      '✅ [Étape 3] Page 3/3 rendered — Risques agrégés · synthèse 6 auteurs',
+
+      // ── Étapes 4 & 5 : Quality checks, move, output ───────────────
+      '🔎 [QC] Checking: 3 pages ✓ · couleurs indicateurs ✓ · aucune bordure visible ✓ · aucune donnée fictive ✓',
+      '⚙️ [Étape 4] mv /home/claude/MacroSynthAI_Report_20260429.pdf /mnt/user-data/outputs/',
+      '✅ [Étape 5] {"status":"success","pdf_path":"/mnt/user-data/outputs/MacroSynthAI_Report_20260429.pdf","pages":3,"file_size_kb":248}',
     ],
-    doneMsg: '✅ PDF report generated — 3 pages, 245 KB',
+    doneMsg: '✅ PDF generated — 3 pages A4 · 248 KB · /mnt/user-data/outputs/MacroSynthAI_Report_20260429.pdf',
   },
 };
 
@@ -266,14 +329,15 @@ async function runAgent(agentId, dispatch, signal) {
 }
 
 /**
- * startWorkflow(dispatch, signal)
+ * runWorkflow(dispatch, signal)
  *
- * Orchestrates the full sequential pipeline:
- *   5%  → Step 1/4 → runAgent('collector')
- *   35% → Step 2/4 → runAgent('synthesis')
- *   55% → Step 3/4 → Promise.all([runAgent('dashboard'), runAgent('pdf')])
- *   95% → Step 4/4 → sleep(2 s) → email log
- *   100% → COMPLETE_WORKFLOW
+ * Orchestrates the MacroSynthAI pipeline per the orchestrator agent prompt:
+ *
+ *   5%  → Étape 1 : macro_research_collector       (QC: ≥2 sources)
+ *   32% → Étape 2 : comparative_synthesis_agent     (QC: ≥1 convergence + ≥1 idée)
+ *   52% → Étape 3 + 3B : dashboard_generator_agent ∥ pdf_report_generator (fork parallèle)
+ *   92% → Étape 4 : Gmail MCP → alexdecarbof71@gmail.com
+ *   100% → COMPLETE_WORKFLOW + OUTPUT_FINAL summary
  */
 async function runWorkflow(dispatch, signal) {
   const upd = (progress, currentStep) =>
@@ -283,30 +347,49 @@ async function runWorkflow(dispatch, signal) {
     dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: 'Orchestrateur', message, logType });
 
   try {
-    log('🚀 MacroSynthAI workflow initiated');
+    log('🚀 MacroSynthAI workflow initiated — période : 01/04/2026 – 28/04/2026');
 
-    upd(5,  'Step 1/4: Source collection');
-    log('Phase 1 → macro_research_collector');
+    // ── Étape 1 : Collecte des sources ───────────────────────────
+    upd(5, 'Étape 1/4 — macro_research_collector');
+    log('Étape 1 → appel macro_research_collector…');
     await runAgent('collector', dispatch, signal);
+    log('✅ [QC Étape 1] research_data stocké — 14 sources analysées ≥ 2 ✓', 'success');
 
-    upd(35, 'Step 2/4: Comparative synthesis');
-    log('Phase 2 → comparative_synthesis_agent');
+    // ── Étape 2 : Synthèse comparative ───────────────────────────
+    upd(32, 'Étape 2/4 — comparative_synthesis_agent');
+    log('Étape 2 → appel comparative_synthesis_agent — input : research_data (14 sources)…');
     await runAgent('synthesis', dispatch, signal);
+    log('✅ [QC Étape 2] synthesis_data stocké — 5 convergences ✓ · 4 nouvelles idées ✓', 'success');
 
-    upd(55, 'Step 3/4: Generating outputs');
-    log('Phase 3 — fork parallèle → dashboard_generator + pdf_report_generator');
+    // ── Étapes 3 + 3B : fork parallèle ───────────────────────────
+    upd(52, 'Étapes 3+3B/4 — dashboard_generator_agent ∥ pdf_report_generator');
+    log('Étape 3 + 3B — fork parallèle → dashboard_generator_agent ∥ pdf_report_generator');
     await Promise.all([
       runAgent('dashboard', dispatch, signal),
       runAgent('pdf',       dispatch, signal),
     ]);
+    log('✅ [QC Étape 3] dashboard_url stocké — Frame Dust live ✓', 'success');
+    log('✅ [QC Étape 3B] pdf_path stocké — /mnt/user-data/outputs/MacroSynthAI_Report_20260429.pdf ✓', 'success');
 
-    upd(95, 'Step 4/4: Sending email');
-    log('Envoi email → board@veillemacro.io…');
-    await sleepC(2_000, signal);
-    log('📧 Email sent — dashboard + PDF report attached', 'success');
+    // ── Étape 4 : Envoi email via Gmail MCP ──────────────────────
+    upd(92, 'Étape 4/4 — Gmail MCP → alexdecarbof71@gmail.com');
+    log('Étape 4 → Gmail MCP — destinataire : alexdecarbof71@gmail.com');
+    log('Préparation email — objet : "MacroSynthAI — Note de recherche macro 01/04–28/04/2026"');
+    log('Pièce jointe : MacroSynthAI_Report_20260429.pdf (248 KB)');
+    log('Corps email : 2 formats (PDF exécutif + dashboard_url) · 14 sources · 3 convergences principales');
+    await sleepC(2_500, signal);
+    log('📧 [Gmail MCP] Email envoyé — statut : 200 OK', 'success');
 
+    // ── OUTPUT_FINAL ──────────────────────────────────────────────
     upd(100, null);
-    log('✅ Workflow completed successfully', 'success');
+    log('─────────────────────────────────────────');
+    log('✅ MacroSynthAI — Note générée avec succès', 'success');
+    log('📊 Sources : 14/22 analysées · 3 partial · 5 non trouvées');
+    log('📊 Convergences : 5 · Divergences : 3 · Nouvelles idées : 4 · Risques : 4');
+    log('🔗 Dashboard : dust.tt/spaces/veillemacro/runs/latest');
+    log('📧 Email envoyé : alexdecarbof71@gmail.com ✓', 'success');
+    log('─────────────────────────────────────────');
+    log('✅ [QC FINAL] 7/7 checks passed — workflow terminé', 'success');
     dispatch({ type: 'COMPLETE_WORKFLOW' });
 
   } catch (e) {
