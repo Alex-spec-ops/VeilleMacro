@@ -27,7 +27,7 @@ export function ProgressBar({ pct, color, gradient, h = 6 }) {
           width:      `${pct}%`,
           background: gradient ?? `linear-gradient(90deg,${color}99,${color})`,
           borderRadius: 99,
-          transition: 'width 0.3s ease',
+          transition: 'width 500ms ease-out',
           position:   'relative',
           boxShadow:  active ? `0 0 8px 1px ${color}55` : 'none',
         }}

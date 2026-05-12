@@ -111,17 +111,15 @@ export function AgentCard({ agent, config }) {
 
   return (
     <div
+      className={isRunning ? 'running-glow' : 'transition-card'}
       style={{
-        background:  C.card,
-        border:      `1px solid ${borderColor}`,
+        background:   C.card,
+        border:       `1px solid ${borderColor}`,
         borderRadius: 16,
-        padding:     '18px 20px',
-        position:    'relative',
-        overflow:    'hidden',
-        boxShadow:   isRunning ? `0 0 20px -6px ${color}44`
-                   : isPending ? `0 0 12px -4px ${C.statusPend}33`
-                   :             'none',
-        transition:  'border-color 0.4s ease, box-shadow 0.4s ease',
+        padding:      '18px 20px',
+        position:     'relative',
+        overflow:     'hidden',
+        boxShadow:    isPending ? `0 0 12px -4px ${C.statusPend}33` : 'none',
       }}
     >
       {/* ── Top glow line (pending / running) ── */}

@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useRef, useCallback, useState } from 'react';
+import React, { useReducer, useEffect, useRef, useCallback } from 'react';
 
 import { Header }           from './components/Header.jsx';
 import { OrchestratorCard } from './components/OrchestratorCard.jsx';
@@ -221,7 +221,7 @@ async function runAgent(agentId, dispatch, signal) {
  *   95% → Step 4/4 → sleep(2 s) → email log
  *   100% → COMPLETE_WORKFLOW
  */
-async function startWorkflow(dispatch, signal) {
+async function runWorkflow(dispatch, signal) {
   const upd = (progress, currentStep) =>
     dispatch({ type: 'UPDATE_PROGRESS', progress, currentStep });
 
@@ -264,40 +264,10 @@ async function startWorkflow(dispatch, signal) {
    ROOT APP
 ───────────────────────────────────────────── */
 export default function App() {
-  const [state, dispatch]     = useReducer(reducer, initialState);
-  const [elapsed, setElapsed] = useState(0);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-  const startRef  = useRef(null);
   const signalRef = useRef({ cancelled: false });
   const clockRef  = useRef(null);
-
-  /* ── Launch ────────────────────────────── */
-  const handleLaunch = useCallback(async () => {
-    if (state.globalStatus === 'running') return;
-
-    const signal = { cancelled: false };
-    signalRef.current = signal;
-
-    startRef.current = Date.now();
-    setElapsed(0);
-    clockRef.current = setInterval(() => {
-      setElapsed(Date.now() - startRef.current);
-    }, 100);
-
-    dispatch({ type: 'START_WORKFLOW' });
-    await startWorkflow(dispatch, signal);
-
-    clearInterval(clockRef.current);
-  }, [state.globalStatus]);
-
-  /* ── Reset ─────────────────────────────── */
-  const handleReset = useCallback(() => {
-    signalRef.current.cancelled = true;
-    clearInterval(clockRef.current);
-    startRef.current   = null;
-    setElapsed(0);
-    dispatch({ type: 'RESET' });
-  }, []);
 
   /* ── Cleanup on unmount ─────────────────── */
   useEffect(() => () => {
@@ -305,7 +275,19 @@ export default function App() {
     clearInterval(clockRef.current);
   }, []);
 
-  const { globalStatus, lastRun, progress, currentStep, agents, logs } = state;
+  /* ── startWorkflow ──────────────────────── */
+  const startWorkflow = useCallback(async () => {
+    if (state.globalStatus === 'running') return;
+
+    const signal = { cancelled: false };
+    signalRef.current = signal;
+    clockRef.current  = setInterval(() => {}, 100); // keep ref alive for cleanup
+
+    dispatch({ type: 'START_WORKFLOW' });
+    await runWorkflow(dispatch, signal);
+
+    clearInterval(clockRef.current);
+  }, [state.globalStatus]);
 
   return (
     <div
@@ -316,7 +298,7 @@ export default function App() {
         fontFamily: "'SF Mono','Fira Code','Consolas',monospace",
       }}
     >
-      <Header status={globalStatus} lastRun={lastRun} />
+      <Header status={state.globalStatus} lastRun={state.lastRun} />
 
       <main
         style={{
@@ -329,30 +311,30 @@ export default function App() {
         }}
       >
         <OrchestratorCard
-          status={globalStatus}
-          progress={progress}
-          currentStep={currentStep}
-          onLaunch={handleLaunch}
-          onReset={handleReset}
+          status={state.globalStatus}
+          progress={state.progress}
+          currentStep={state.currentStep}
+          onLaunch={startWorkflow}
+          onReset={() => {
+            signalRef.current.cancelled = true;
+            clearInterval(clockRef.current);
+            dispatch({ type: 'RESET' });
+          }}
         />
 
         {/* 3-col grid: Collector, Synthesis, Dashboard */}
-        <div
-          style={{
-            display:             'grid',
-            gridTemplateColumns: 'repeat(3,1fr)',
-            gap:                 16,
-          }}
-        >
-          {['collector', 'synthesis', 'dashboard'].map(id => (
-            <AgentCard key={id} agent={agents[id]} config={AGENTS[id]} />
-          ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+          <AgentCard agent={state.agents.collector} config={AGENTS.collector} />
+          <AgentCard agent={state.agents.synthesis} config={AGENTS.synthesis} />
+          <AgentCard agent={state.agents.dashboard} config={AGENTS.dashboard} />
         </div>
 
-        {/* PDF standalone */}
-        <AgentCard agent={agents.pdf} config={AGENTS.pdf} />
+        {/* PDF — own row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+          <AgentCard agent={state.agents.pdf} config={AGENTS.pdf} />
+        </div>
 
-        <ExecutionLog logs={logs} />
+        <ExecutionLog logs={state.logs} />
 
         <div
           style={{

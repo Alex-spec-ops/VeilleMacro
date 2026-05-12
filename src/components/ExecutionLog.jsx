@@ -101,7 +101,7 @@ export function ExecutionLog({ logs }) {
             return (
               <div
                 key={entry.id}
-                className="slide-in"
+                className="animate-fade-in"
                 style={{
                   display:      'flex',
                   alignItems:   'baseline',

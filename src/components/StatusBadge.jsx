@@ -42,7 +42,7 @@ export function StatusBadge({ status, size = 'md' }) {
 
   return (
     <span
-      className={s.pulse ? 'pulse-badge' : ''}
+      className={s.pulse ? 'animate-pulse' : ''}
       style={{
         display:       'inline-flex',
         alignItems:    'center',

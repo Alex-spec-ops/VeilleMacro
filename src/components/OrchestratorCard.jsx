@@ -201,6 +201,7 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
         <div style={{ display: 'flex', gap: 10 }}>
           {/* Launch */}
           <button
+            className="btn-launch"
             onClick={onLaunch}
             disabled={isRunning}
             style={{
@@ -221,10 +222,7 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
               fontWeight:     700,
               opacity:        isRunning ? 0.6 : 1,
               boxShadow:      isRunning ? 'none' : '0 4px 20px -4px rgba(236,72,153,0.5)',
-              transition:     'opacity 0.2s, box-shadow 0.2s, transform 0.1s',
             }}
-            onMouseDown={e => { if (!isRunning) e.currentTarget.style.transform = 'scale(0.98)'; }}
-            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
             {isRunning
               ? <><Loader2 size={15} className="spin" /> Running…</>
@@ -233,6 +231,7 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
 
           {/* Reset */}
           <button
+            className="btn-reset"
             onClick={onReset}
             style={{
               display:      'flex',
@@ -246,12 +245,7 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
               color:        C.textMuted,
               fontSize:     13,
               fontWeight:   600,
-              transition:   'border-color 0.2s, color 0.2s, transform 0.1s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = C.text; e.currentTarget.style.color = C.text; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; }}
-            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)'; }}
-            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
             <RotateCcw size={13} /> Reset
           </button>
