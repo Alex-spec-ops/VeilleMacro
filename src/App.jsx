@@ -56,17 +56,48 @@ const AGENTS = {
   synthesis: {
     id: 'synthesis', name: 'comparative_synthesis_agent',
     label: 'Analyse Comparative', emoji: '⚖️', color: C.violet,
-    simulatedDuration: 12_000,
-    desc: 'Analyse comparative multi-sources avec LLM — détection signaux macro.',
+    simulatedDuration: 28_000,
+    desc: 'Synthèse comparative croisée de qualité CIO : convergences ≥3 auteurs, divergences, nouvelles idées, risques agrégés.',
     logs: [
-      '🔄 Analyzing convergences across sources...',
-      '✅ Identified 3 strategic convergences',
-      '🔄 Analyzing divergences...',
-      '✅ Identified 2 notable divergences',
-      '💡 Extracted 5 new investment ideas',
-      '⚠️ Aggregated 4 risk signals',
+      // ── Chargement de l'input ─────────────────────────────────────
+      '📥 Input received — collector JSON · 14 sources_analyzed · 5 sources_not_found',
+      '🔄 Parsing asset_class_positioning for all 14 sources…',
+      '✅ Positioning matrix built (14 × 6 asset classes)',
+
+      // ── Section 1 : Convergences ──────────────────────────────────
+      '🔎 [Convergences] Scanning 10 priority themes…',
+      '✅ [Theme 1] Valorisations US — consensus Bear · 6 auteurs alignés (Timmer · Marks · Asness · Grantham partial · Edwards · Roubini)',
+      '✅ [Theme 2] Géopolitique / risque Chine-Taiwan — consensus Risk-off · 4 auteurs (Cembalest · Papic · Saravelos · El-Erian)',
+      '✅ [Theme 3] Actions internationales EAFE/EM — consensus Bull · 4 auteurs (Timmer · Asness · Papic · El-Erian)',
+      '✅ [Theme 4] IA / Hyperscalers — consensus Neutre-prudent · 3 auteurs (Cembalest · Mauboussin · Timmer)',
+      '✅ [Theme 5] Politique Fed trop restrictive — consensus critique · 3 auteurs (Summers · El-Erian · Roubini)',
+      '⚠️ [Theme 6] Bitcoin/Crypto — données insuffisantes (< 2 sources) · skipped per CRITICAL_RULES',
+
+      // ── Section 2 : Divergences ───────────────────────────────────
+      '🔎 [Divergences] Identifying explicit contradictions…',
+      '✅ [Div. 1] Crédit HY : Marks (opportuniste / Bull) ↔ Edwards (Ice Age Bear / spread compression insoutenable)',
+      '✅ [Div. 2] Récession 2026 : Roubini · Summers (probabilité élevée 60 %) ↔ Timmer · Papic (soft landing, pas de récession)',
+      '✅ [Div. 3] Dollar : Saravelos (USD faiblesse structurelle) ↔ El-Erian (USD résilience sous-estimée)',
+
+      // ── Section 3 : Nouvelles idées ───────────────────────────────
+      '💡 [Ideas] Extracting non-mainstream / counter-intuitive ideas…',
+      '💡 [Idea 1] Timmer — Bitcoin comme couverture dépréciation monétaire, cycle 4 ans bull confirmé',
+      '💡 [Idea 2] Cembalest — Power infrastructure (data centers / électricité) = meilleur proxy IA vs Mag7',
+      '💡 [Idea 3] Asness — Value factor en Europe : décote historique vs croissance US, mean reversion probable',
+      '💡 [Idea 4] Papic — Géopolitique comme opportunité (pas seulement risque) : Inde, Brésil, ASEAN',
+
+      // ── Section 4 : Risques agrégés ───────────────────────────────
+      '⚠️ [Risks] Aggregating risks mentioned by ≥ 2 authors…',
+      '⚠️ [Risk 1] ÉLEVÉ — Concentration Mag7 · 5 auteurs · risk of mean reversion brutal',
+      '⚠️ [Risk 2] ÉLEVÉ — Déficit fiscal US non soutenable · 4 auteurs · impact taux longs',
+      '⚠️ [Risk 3] MOYEN — Récession consommation US · 3 auteurs · leading indicators se retournent',
+      '⚠️ [Risk 4] MOYEN — Escalade géopolitique Chine/Taiwan · 3 auteurs · choc supply chains',
+
+      // ── Finalisation ──────────────────────────────────────────────
+      '📊 Summary: 5 convergences · 3 divergences · 4 new ideas · 4 aggregated risks',
+      '✅ JSON synthesis_output serialized — general_sentiment: Mitigé (risk-on sélectif)',
     ],
-    doneMsg: '✅ Synthesis completed — 5 ideas, 4 risk signals',
+    doneMsg: '✅ Synthesis completed — 5 convergences · 3 divergences · 4 ideas · 4 risks',
   },
   dashboard: {
     id: 'dashboard', name: 'dashboard_generator_agent',
