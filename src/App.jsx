@@ -7,6 +7,7 @@ import { ExecutionLog }     from './components/ExecutionLog.jsx';
 
 import { C }                        from './constants.js';
 import { inferLogType, sleep }      from './utils.js';
+import { callGemini }               from './gemini.js';
 
 /* ─────────────────────────────────────────────
    AGENT DEFINITIONS  (metadata, no state)
@@ -52,6 +53,14 @@ const AGENTS = {
       '📊 Tally: 14 found · 3 partial (paywall) · 5 not found · 0 hallucinated',
     ],
     doneMsg: '✅ Collector completed — 14/22 sources · 3 partial · period 01/04–28/04/2026',
+    geminiPrompt: `Tu es l'agent macro_research_collector. Simule une trace d'exécution réaliste de recherche de publications récentes pour la période 01/04/2026 – 28/04/2026.
+Génère exactement 24 lignes de log en français. Chaque ligne DOIT commencer par un de ces emojis : 🔍 ✅ ❌ ⚠️ 📊
+Cherche dans cet ordre : Jurrien Timmer (Fidelity), Michael Cembalest (JPM EOTM), Jeremy Grantham (GMO), Marko Papic (BCA), François Trahan (BMO), Howard Marks (Oaktree), Albert Edwards (SG), Bill Ackman (Pershing Square), Bob Elliott (Unlimited Funds), Chris Burniske (Placeholder VC), Cliff Asness (AQR), George Saravelos (Deutsche Bank), Jeffrey Currie (Carlyle), Kevin Kelly (Delphi Digital), Larry Summers (Harvard), Michael Mauboussin (Morgan Stanley), Mohamed El-Erian (Bloomberg), Nouriel Roubini (Project Syndicate), Pierre Andurand (Andurand Capital), Stanley Druckenmiller (Duquesne), Warren Buffett (Berkshire), Zoltan Pozsar.
+Format des lignes trouvées : ✅ [X/22] NOM "Titre publication" — JJ/MM/AAAA · web_fetch OK (N tokens)
+Format des lignes non trouvées : ❌ [X/22] Raison courte — added to sources_not_found
+Regroupe les sources 7-15 en scan batch (1-2 lignes).
+Termine par : 📊 Tally: X found · Y partial · Z not found · 0 hallucinated
+Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
   synthesis: {
     id: 'synthesis', name: 'comparative_synthesis_agent',
@@ -98,6 +107,18 @@ const AGENTS = {
       '✅ JSON synthesis_output serialized — general_sentiment: Mitigé (risk-on sélectif)',
     ],
     doneMsg: '✅ Synthesis completed — 5 convergences · 3 divergences · 4 ideas · 4 risks',
+    geminiPrompt: `Tu es l'agent comparative_synthesis_agent. Simule une trace d'exécution réaliste d'analyse comparative de 14 publications macro institutionnelles.
+Génère exactement 26 lignes de log en français. Chaque ligne DOIT commencer par : 📥 🔄 ✅ ❌ ⚠️ 💡 📊
+Phases à simuler :
+1. Parsing matrice positionnement (14 sources × 6 classes d'actifs)
+2. Convergences stratégiques (thèmes : valorisations US, géopolitique Chine/Taiwan, actions EAFE/EM, IA/hyperscalers, politique Fed) — indiquer les auteurs alignés (≥3 par convergence)
+3. Divergences notables (crédit HY, récession 2026, dollar US) — positions contradictoires explicites avec auteurs
+4. Nouvelles idées d'investissement contre-intuitives (Bitcoin comme hedge, power infrastructure vs Mag7, Value Europe, géopolitique comme opportunité)
+5. Risques agrégés (≥2 auteurs) avec sévérité ÉLEVÉ/MOYEN
+6. JSON synthesis_output sérialisé avec general_sentiment
+Auteurs disponibles : Timmer, Cembalest, Papic, Marks, Edwards, Asness, Saravelos, Summers, El-Erian, Roubini, Buffett, Mauboussin, Trahan, Andurand.
+Termine par : 📊 Summary: X convergences · Y divergences · Z new ideas · W aggregated risks
+Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
   dashboard: {
     id: 'dashboard', name: 'dashboard_generator_agent',
@@ -151,6 +172,19 @@ const AGENTS = {
       '✅ [HTML] file_generation tool called — file attached to conversation',
     ],
     doneMsg: '✅ Dashboard deployed — TSX 1 843 lines (Dust Frame) + HTML 2 107 lines (standalone)',
+    geminiPrompt: `Tu es l'agent dashboard_generator_agent. Simule une trace d'exécution réaliste de génération d'un dashboard React TSX shadcn/ui pour une note de recherche macro.
+Génère exactement 28 lignes de log en français. Chaque ligne DOIT commencer par : 📥 📝 ✅ ⚙️ 🚀 🎨
+Phases à simuler :
+1. Parsing input : synthesis_data (5 sections) + 14 individual_analyses
+2. Plan de 16 onglets (Synthèse · Dashboard · 14 onglets auteurs dans l'ordre de priorité)
+3. Génération TSX : imports (React · useState · Card · Badge), Header, navigation tabs (rounded-none · border-b-2)
+4. Onglet Synthèse : 5 Card sections (overview · convergences 5 lignes · divergences 3 lignes · nouvelles idées ol · risques ul)
+5. Onglet Dashboard : matrice 11×16 positionnement (Bull🟢/Neutre🟡/Bear🔴) avec consensus column et tooltips
+6. 14 onglets auteurs (5 sections chacun : header · résumé · key_takeaways · positioning table · contrarian signals)
+7. Validation syntaxe TSX · déploiement Dust Frame
+8. Génération HTML autonome (CDN React 18 · Babel · Tailwind · polyfills shadcn/ui)
+Termine par : ✅ [HTML] macrosynth_dashboard.html generated — 2 107 lines · no external deps at runtime
+Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
   pdf: {
     id: 'pdf', name: 'pdf_report_generator',
@@ -191,6 +225,16 @@ const AGENTS = {
       '✅ [Étape 5] {"status":"success","pdf_path":"/mnt/user-data/outputs/MacroSynthAI_Report_20260429.pdf","pages":3,"file_size_kb":248}',
     ],
     doneMsg: '✅ PDF generated — 3 pages A4 · 248 KB · /mnt/user-data/outputs/MacroSynthAI_Report_20260429.pdf',
+    geminiPrompt: `Tu es l'agent pdf_report_generator. Simule une trace d'exécution réaliste de génération d'un rapport PDF 3 pages A4 via ReportLab Python.
+Génère exactement 24 lignes de log en français. Chaque ligne DOIT commencer par : 📥 🔄 📝 ⚙️ ✅ 🔎
+Phases à simuler :
+1. Extraction données : Page 1 (header MacroSynthAI · overview + sentiment Mitigé · dashboard 8 classes × 14 auteurs) · Page 2 (convergences top 4 · divergences 3 · idées top 5) · Page 3 (risques sorted par sévérité · grille 2-col 6 auteurs)
+2. Génération script Python (387 lignes) : imports reportlab, ParagraphStyles (h1:18pt h2:14pt body:9pt TA_JUSTIFY footer:7pt), tableaux border=0, couleurs indicateurs Bull#16a34a/Neutre#d97706/Bear#dc2626, footer "Page X/3"
+3. pip install reportlab --break-system-packages → reportlab 4.2.5
+4. python3 generate_pdf.py : rendu Page 1/3 · Page 2/3 · Page 3/3
+5. Quality checks : 3 pages ✓ · couleurs indicateurs ✓ · aucune bordure visible ✓ · données non inventées ✓
+6. mv vers /mnt/user-data/outputs/ · JSON de retour {"status":"success","pages":3,"file_size_kb":248}
+Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
 };
 
@@ -279,53 +323,99 @@ function sleepC(ms, signal) {
 }
 
 /**
- * runAgent(agentId, dispatch, signal, config?)
+ * runAgent(agentId, dispatch, signal)
  *
- * 1. pending  (1 s)
- * 2. running  (simulatedDuration) — progressive logs, duration updates every 100 ms
- * 3. success
+ * Two execution modes, selected automatically:
+ *
+ *  ① Gemini mode  — when VITE_GEMINI_API_KEY is set AND def.geminiPrompt exists
+ *     pending(1s) → "Calling Gemini API…" → stream response lines (150 ms apart) → success
+ *
+ *  ② Simulation mode  — fallback when key is absent or Gemini call fails
+ *     pending(1s) → progressive pre-defined logs distributed over simulatedDuration → success
  */
 async function runAgent(agentId, dispatch, signal) {
   const def = AGENTS[agentId];
 
   const log = (message, logType) =>
-    dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: def.name, message, logType });
+    dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: def.name, message,
+               logType: logType ?? inferLogType(message) });
 
-  // ── Pending ──────────────────────────────
+  // ── Pending ──────────────────────────────────────────────────
   dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'pending', duration: 0 });
   log(`⏳ ${def.label} — initialisation en cours…`, 'info');
   await sleepC(1_000, signal);
 
-  // ── Running ──────────────────────────────
+  // ── Running ──────────────────────────────────────────────────
   const t0 = Date.now();
   dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'running', duration: 0 });
   log(`▶ ${def.label} démarré`, 'info');
 
-  // Schedule progressive logs evenly across simulatedDuration
-  const stepDelay = def.simulatedDuration / (def.logs.length + 1);
-  const logTimers = def.logs.map((msg, i) =>
-    setTimeout(() => {
-      if (signal.cancelled) return;
-      dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: def.name, message: msg, logType: inferLogType(msg) });
-    }, stepDelay * (i + 1)),
-  );
-
-  // Smooth progress bar — update duration every 100 ms
+  // Duration ticker — keeps the progress bar moving in both modes
   const durationInterval = setInterval(() => {
     if (signal.cancelled) return;
     dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'running', duration: Date.now() - t0 });
   }, 100);
 
+  const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
   try {
-    await sleepC(def.simulatedDuration, signal);
+    if (geminiKey && def.geminiPrompt) {
+      // ── Mode ① : Gemini API ────────────────────────────────────
+      log('🤖 Gemini API (gemini-2.0-flash) — generating execution trace…', 'info');
+
+      let responseText;
+      try {
+        responseText = await callGemini(def.geminiPrompt, signal);
+      } catch (apiErr) {
+        if (apiErr.cancelled) throw apiErr;            // propagate reset
+        log(`⚠️ Gemini API error: ${apiErr.message} — falling back to simulation`, 'warning');
+        responseText = null;
+      }
+
+      if (responseText) {
+        // Stream each response line with a small delay for readability
+        const lines = responseText.split('\n').map(l => l.trim()).filter(Boolean);
+        for (const line of lines) {
+          if (signal.cancelled) return;
+          log(line, inferLogType(line));
+          await sleepC(150, signal);
+        }
+      } else {
+        // Fallback within Gemini mode: run simulation
+        await runSimulation(def, dispatch, signal);
+      }
+
+    } else {
+      // ── Mode ② : Simulation ────────────────────────────────────
+      await runSimulation(def, dispatch, signal);
+    }
+
   } finally {
     clearInterval(durationInterval);
-    logTimers.forEach(clearTimeout);
   }
 
-  // ── Success ──────────────────────────────
-  dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'success', duration: def.simulatedDuration });
+  // ── Success ──────────────────────────────────────────────────
+  const finalDuration = Date.now() - t0;
+  dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'success', duration: finalDuration });
   log(def.doneMsg, inferLogType(def.doneMsg));
+}
+
+/** Distribute pre-defined logs evenly across simulatedDuration. */
+function runSimulation(def, dispatch, signal) {
+  return new Promise((resolve, reject) => {
+    const stepDelay = def.simulatedDuration / (def.logs.length + 1);
+    const logTimers = def.logs.map((msg, i) =>
+      setTimeout(() => {
+        if (signal.cancelled) return;
+        dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: def.name,
+                   message: msg, logType: inferLogType(msg) });
+      }, stepDelay * (i + 1)),
+    );
+
+    sleepC(def.simulatedDuration, signal)
+      .then(resolve)
+      .catch(e => { logTimers.forEach(clearTimeout); reject(e); });
+  });
 }
 
 /**
