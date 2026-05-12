@@ -11,7 +11,7 @@ const MONO = "'Monaco','Courier New',monospace";
  * Gradient hero section — purple-to-blue, vibrant Stripe-style.
  * Rotating radial glow in background.
  */
-export function OrchestratorCard({ status, progress, currentStep, onLaunch, onReset, canLaunch = true }) {
+export function OrchestratorCard({ status, progress, currentStep, onLaunch, onReset, onViewResults, canLaunch = true }) {
   const isRunning   = status === 'running';
   const isSuccess   = status === 'success';
   const isIdle      = status === 'idle';
@@ -249,11 +249,36 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
           >
             {isRunning
               ? <><Loader2 size={16} color="rgba(255,255,255,0.7)" className="spin" /> Running…</>
-              : !canLaunch
-                ? <>📅 Sélectionnez une période</>
-                : <>🚀 Launch MacroSynthAI</>
+              : isSuccess
+                ? <><span style={{ fontSize: 18 }}>📊</span> Consulter le Dashboard</>
+                : !canLaunch
+                  ? <>📅 Sélectionnez une période</>
+                  : <>🚀 Launch MacroSynthAI</>
             }
           </button>
+
+          {isSuccess && (
+            <button
+              onClick={onViewResults}
+              style={{
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'center',
+                gap:            10,
+                padding:        '14px 28px',
+                background:     C.emerald,
+                color:          '#ffffff',
+                border:         'none',
+                borderRadius:   12,
+                fontSize:       14,
+                fontWeight:     700,
+                cursor:         'pointer',
+                boxShadow:      '0 8px 24px rgba(0, 217, 163, 0.35)',
+              }}
+            >
+              📊 Consulter le Rapport
+            </button>
+          )}
 
           {/* Reset */}
           <button

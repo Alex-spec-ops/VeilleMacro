@@ -6,6 +6,8 @@ import { AgentCard }        from './components/AgentCard.jsx';
 import { ExecutionLog }     from './components/ExecutionLog.jsx';
 import { StatsBar }         from './components/StatsBar.jsx';
 import { PeriodSelector }   from './components/PeriodSelector.jsx';
+import { PipelineChart }    from './components/PipelineChart.jsx';
+import { SynthesisDashboard } from './components/SynthesisDashboard.jsx';
 
 import { C }                        from './constants.js';
 import { inferLogType, sleep }      from './utils.js';
@@ -541,6 +543,7 @@ async function runWorkflow(dispatch, signal, period) {
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [dateRange, setDateRange] = useState({ start: null, end: null });
+  const [view, setView]           = useState('orchestrator'); // 'orchestrator' | 'dashboard'
 
   const signalRef = useRef({ cancelled: false });
   const clockRef  = useRef(null);
@@ -582,16 +585,70 @@ export default function App() {
     >
       <Header status={state.globalStatus} lastRun={state.lastRun} />
 
-      <main
-        style={{
-          maxWidth:      1440,
-          margin:        '0 auto',
-          padding:       '28px 32px',
-          display:       'flex',
-          flexDirection: 'column',
-          gap:           24,
-        }}
-      >
+      {/* ── View Switcher ── */}
+      {state.globalStatus === 'success' && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 12,
+          padding: '24px 32px 0',
+          margin: '0 auto',
+          maxWidth: 1440
+        }}>
+          <button
+            onClick={() => setView('orchestrator')}
+            style={{
+              padding: '10px 24px',
+              borderRadius: 10,
+              border: `1.5px solid ${view === 'orchestrator' ? C.blue : C.border}`,
+              background: view === 'orchestrator' ? `${C.blue}10` : '#ffffff',
+              color: view === 'orchestrator' ? C.blue : '#555555',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            🔧 Orchestrateur
+          </button>
+          <button
+            onClick={() => setView('dashboard')}
+            style={{
+              padding: '10px 24px',
+              borderRadius: 10,
+              border: `1.5px solid ${view === 'dashboard' ? C.emerald : C.border}`,
+              background: view === 'dashboard' ? `${C.emerald}10` : '#ffffff',
+              color: view === 'dashboard' ? C.emerald : '#555555',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            📊 Rapport de Synthèse
+          </button>
+        </div>
+      )}
+
+      {view === 'dashboard' ? (
+        <SynthesisDashboard state={state} period={dateRange} />
+      ) : (
+        <main
+          style={{
+            maxWidth:      1440,
+            margin:        '0 auto',
+            padding:       '28px 32px',
+            display:       'flex',
+            flexDirection: 'column',
+            gap:           24,
+          }}
+        >
         {/* ── Stats Bar ── */}
         <StatsBar isActive={hasRun} />
 
@@ -614,8 +671,13 @@ export default function App() {
             signalRef.current.cancelled = true;
             clearInterval(clockRef.current);
             dispatch({ type: 'RESET' });
+            setView('orchestrator');
           }}
+          onViewResults={() => setView('dashboard')}
         />
+
+        {/* ── Visual Monitoring (Chart) ── */}
+        <PipelineChart agents={state.agents} />
 
         {/* ── Agent cards — 3-col grid, 4th wraps to next row ── */}
         <div
@@ -645,7 +707,7 @@ export default function App() {
         >
           MacroSynthAI · Agent Orchestration Platform · {new Date().getFullYear()}
         </div>
-      </main>
+      )}
     </div>
   );
 }
