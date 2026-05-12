@@ -335,8 +335,31 @@ function sleepC(ms, signal) {
  *  ② Simulation mode  — fallback when key is absent or Gemini call fails
  *     pending(1s) → progressive pre-defined logs distributed over simulatedDuration → success
  */
-async function runAgent(agentId, dispatch, signal) {
-  const def = AGENTS[agentId];
+async function runAgent(agentId, dispatch, signal, period) {
+  const startLabel = fmtPeriodDate(period.start);
+  const endLabel   = fmtPeriodDate(period.end);
+  const periodStr  = `${startLabel} – ${endLabel}`;
+  const pdfName    = pdfFilename(period.end);
+
+  // Clone config to inject dynamic dates
+  let def = JSON.parse(JSON.stringify(AGENTS[agentId]));
+
+  // Update strings
+  const patch = (str) => {
+    if (!str) return str;
+    return str
+      .replace(/01\/04\/2026 – 28\/04\/2026/g, '##PERIOD##')
+      .replace(/01\/04 – 28\/04\/2026/g, '##PERIOD##')
+      .replace(/01\/04–28\/04\/2026/g, '##PERIOD##')
+      .replace(/MacroSynthAI_Report_20260429\.pdf/g, pdfName)
+      .replace(/\d{2}\/\d{2}\/2026/g, endLabel)
+      .replace(/##PERIOD##/g, periodStr);
+  };
+
+  def.desc    = patch(def.desc);
+  def.doneMsg = patch(def.doneMsg);
+  if (def.geminiPrompt) def.geminiPrompt = patch(def.geminiPrompt);
+  if (def.logs) def.logs = def.logs.map(patch);
 
   const log = (message, logType) =>
     dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: def.name, message,
@@ -467,21 +490,21 @@ async function runWorkflow(dispatch, signal, period) {
     // ── Étape 1 : Collecte des sources ───────────────────────────
     upd(5, 'Étape 1/4 — macro_research_collector');
     log(`Étape 1 → appel macro_research_collector — période : ${periodStr}`);
-    await runAgent('collector', dispatch, signal);
+    await runAgent('collector', dispatch, signal, period);
     log('✅ [QC Étape 1] research_data stocké — 14 sources analysées ≥ 2 ✓', 'success');
 
     // ── Étape 2 : Synthèse comparative ───────────────────────────
     upd(32, 'Étape 2/4 — comparative_synthesis_agent');
     log('Étape 2 → appel comparative_synthesis_agent — input : research_data (14 sources)…');
-    await runAgent('synthesis', dispatch, signal);
+    await runAgent('synthesis', dispatch, signal, period);
     log('✅ [QC Étape 2] synthesis_data stocké — 5 convergences ✓ · 4 nouvelles idées ✓', 'success');
 
     // ── Étapes 3 + 3B : fork parallèle ───────────────────────────
     upd(52, 'Étapes 3+3B/4 — dashboard_generator_agent ∥ pdf_report_generator');
     log('Étape 3 + 3B — fork parallèle → dashboard_generator_agent ∥ pdf_report_generator');
     await Promise.all([
-      runAgent('dashboard', dispatch, signal),
-      runAgent('pdf',       dispatch, signal),
+      runAgent('dashboard', dispatch, signal, period),
+      runAgent('pdf',       dispatch, signal, period),
     ]);
     log('✅ [QC Étape 3] dashboard_url stocké — Frame Dust live ✓', 'success');
     log(`✅ [QC Étape 3B] pdf_path stocké — /mnt/user-data/outputs/${pdfName} ✓`, 'success');
