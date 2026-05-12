@@ -1,41 +1,54 @@
 /* ─────────────────────────────────────────────
    DESIGN TOKENS  —  Blanc & Vibrant Theme
-   Stripe / Linear / Notion inspired
+   Contraste renforcé : textes sombres nets, bordures visibles
 ───────────────────────────────────────────── */
 export const C = {
   /* ── Backgrounds ── */
-  bg:         '#fafafa',
-  card:       '#ffffff',
-  cardDeep:   '#F3F4F6',
-  surface:    '#F9FAFB',
+  bg:         '#f0f0eb',   // warm off-white page
+  card:       '#ffffff',   // white cards
+  cardDeep:   '#f4f4f0',   // inset / nested surfaces
+  surface:    '#f9f9f7',   // slightly raised
 
-  /* ── Borders ── */
-  border:    '#f0f0f0',
-  borderHi:  '#e5e5e5',
-  borderDim: '#f8f8f8',
+  /* ── Borders — assez foncées pour être visibles ── */
+  border:    '#d8d8d0',   // medium gray border
+  borderHi:  '#b8b8b0',   // hover / highlighted
+  borderDim: '#e8e8e0',   // subtle
 
-  /* ── Text ── */
-  text:      '#1a1a1a',
-  textMuted: '#6B7280',
-  textDim:   '#9CA3AF',
+  /* ── Text — fort contraste sur fond clair ── */
+  text:      '#111111',   // quasi-noir
+  textMuted: '#444444',   // gris foncé lisible
+  textDim:   '#888888',   // tertiaire visible
+
+  /* ── Sidebar / dark surfaces — texte clair ── */
+  sidebarText:       '#ffffff',
+  sidebarTextMuted:  '#c0c0c0',
+  sidebarTextDim:    '#888888',
 
   /* ── Status ── */
-  statusIdle: '#9CA3AF',
-  statusPend: '#FF8E53',
-  statusRun:  '#667EEA',
-  statusOk:   '#00A86B',
-  statusErr:  '#FF6B6B',
-  statusWarn: '#FF8E53',
+  statusIdle: '#888888',
+  statusPend: '#d97706',
+  statusRun:  '#2563eb',
+  statusOk:   '#16a34a',
+  statusErr:  '#dc2626',
+  statusWarn: '#d97706',
 
   /* ── Vibrant Brand Palette ── */
-  coral:     '#FF6B6B',   // Collector
-  orange:    '#FF8E53',   // PDF / pending
-  sunshine:  '#FFD93D',   // progress bar
-  teal:      '#4ECDC4',   // Dashboard
-  emerald:   '#00D9A3',   // success gradient
-  forest:    '#00A86B',   // success text
-  blue:      '#667EEA',   // Synthesis / orchestrator
-  purple:    '#764BA2',   // Orchestrator gradient end
+  coral:     '#e53e3e',   // Collector (rouge accessible)
+  orange:    '#dd6b20',   // PDF / pending
+  sunshine:  '#d69e2e',   // progress bar
+  teal:      '#2c7a7b',   // Dashboard
+  emerald:   '#276749',   // success gradient
+  forest:    '#276749',   // success text (wcag AA on white)
+  blue:      '#2563eb',   // Synthesis / orchestrator
+  purple:    '#6b46c1',   // Orchestrator gradient end
+
+  /* ── KPI delta badges ── */
+  badgeGreenBg:   '#dcfce7',
+  badgeGreenText: '#15803d',   // dark green on light green
+  badgeRedBg:     '#fee2e2',
+  badgeRedText:   '#b91c1c',   // dark red on light red
+  badgeBlueBg:    '#dbeafe',
+  badgeBlueText:  '#1d4ed8',
 };
 
 /* ─────────────────────────────────────────────

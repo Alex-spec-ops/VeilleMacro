@@ -129,8 +129,8 @@ export function ExecutionLog({ logs }) {
                   alignItems: 'baseline',
                   padding:    '4px 20px',
                   lineHeight: 1.6,
-                  background: isEven ? '#FAFAFA' : '#ffffff',
-                  borderBottom: `1px solid ${C.borderDim}`,
+                  background: isEven ? '#f7f7f5' : '#ffffff',
+                  borderBottom: `1px solid ${C.border}`,
                   gap:        0,
                 }}
               >
@@ -138,7 +138,7 @@ export function ExecutionLog({ logs }) {
                 <span
                   style={{
                     minWidth:   75,
-                    color:      '#9CA3AF',
+                    color:      '#555555',
                     fontWeight: 600,
                     flexShrink: 0,
                     fontSize:   11,
@@ -164,11 +164,11 @@ export function ExecutionLog({ logs }) {
                 <span
                   style={{
                     flex:      1,
-                    color: entry.logType === 'success' ? C.forest
-                         : entry.logType === 'error'   ? C.coral
-                         : entry.logType === 'warning' ? C.orange
-                         : entry.logType === 'info'    ? C.blue
-                         :                               '#374151',
+                    color: entry.logType === 'success' ? '#166534'
+                         : entry.logType === 'error'   ? '#991b1b'
+                         : entry.logType === 'warning' ? '#92400e'
+                         : entry.logType === 'info'    ? '#1e40af'
+                         :                               '#1f2937',
                     fontWeight:   entry.logType === 'success' || entry.logType === 'error' ? 600 : 400,
                     wordBreak:    'break-word',
                     fontSize:     12,

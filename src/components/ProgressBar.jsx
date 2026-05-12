@@ -11,7 +11,7 @@ export function ProgressBar({ pct, color, gradient, h = 5 }) {
     <div
       style={{
         height:       h,
-        background:   `${color}18`,
+        background:   `${color}25`, // légèrement plus opaque que 18
         borderRadius: 100,
         overflow:     'hidden',
       }}

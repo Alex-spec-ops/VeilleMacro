@@ -9,7 +9,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #fafafa;
+      background: #f0f0eb;
       font-family: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, sans-serif;
       -webkit-font-smoothing: antialiased;
       color: #1a1a1a;
@@ -110,7 +110,23 @@
     }
 
     /* Log entry hover */
-    .log-row:hover { background: #ffffff !important; }
+    .log-row:hover { background: #eeeee8 !important; }
+
+    /* Preset shortcut buttons */
+    .preset-btn:not(:disabled):hover {
+      background:    #EEF2FF !important;
+      border-color:  rgba(102, 126, 234, 0.45) !important;
+      color:         #667EEA !important;
+    }
+    .preset-btn:not(:disabled):active {
+      background:    #E0E7FF !important;
+    }
+
+    /* Date inputs focus ring */
+    input[type="date"]:focus {
+      border-color: #667EEA !important;
+      box-shadow:   0 0 0 3px rgba(102, 126, 234, 0.12);
+    }
   </style>
 </head>
 

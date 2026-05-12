@@ -68,7 +68,7 @@ export function Header({ status, lastRun }) {
           <div
             style={{
               fontSize:   11,
-              color:      C.textDim,
+              color:      '#555555',
               marginTop:  2,
               fontWeight: 500,
             }}
@@ -81,12 +81,12 @@ export function Header({ status, lastRun }) {
       {/* ── Right: last run + status ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.5 }}>Last run</div>
+          <div style={{ fontSize: 11, color: '#555555', lineHeight: 1.5 }}>Last run</div>
           <div
             style={{
               fontSize:   12,
               fontWeight: 600,
-              color:      lastRunLabel ? C.textMuted : C.textDim,
+              color:      lastRunLabel ? '#333333' : '#666666',
             }}
           >
             {lastRunLabel ?? '—'}

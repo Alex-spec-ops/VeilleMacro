@@ -6,8 +6,8 @@ const STATUS_MAP = {
   idle:    {
     label: 'Idle',
     gradient: null,
-    solidBg: '#F3F4F6',
-    color: '#6B7280',
+    solidBg: '#e4e4e0',
+    color: '#444444',
     pulse: false, check: false,
   },
   pending: {

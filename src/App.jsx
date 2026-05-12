@@ -1,10 +1,11 @@
-import React, { useReducer, useEffect, useRef, useCallback } from 'react';
+import React, { useReducer, useEffect, useRef, useCallback, useState } from 'react';
 
 import { Header }           from './components/Header.jsx';
 import { OrchestratorCard } from './components/OrchestratorCard.jsx';
 import { AgentCard }        from './components/AgentCard.jsx';
 import { ExecutionLog }     from './components/ExecutionLog.jsx';
 import { StatsBar }         from './components/StatsBar.jsx';
+import { PeriodSelector }   from './components/PeriodSelector.jsx';
 
 import { C }                        from './constants.js';
 import { inferLogType, sleep }      from './utils.js';
@@ -430,19 +431,42 @@ function runSimulation(def, dispatch, signal) {
  *   92% → Étape 4 : Gmail MCP → alexdecarbof71@gmail.com
  *   100% → COMPLETE_WORKFLOW + OUTPUT_FINAL summary
  */
-async function runWorkflow(dispatch, signal) {
+/** Format a Date as "DD/MM/YYYY" */
+function fmtPeriodDate(d) {
+  return new Date(d).toLocaleDateString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  });
+}
+
+/** Generate PDF filename from end date: "MacroSynthAI_Report_YYYYMMDD.pdf" */
+function pdfFilename(d) {
+  const dt  = new Date(d);
+  const y   = dt.getFullYear();
+  const m   = String(dt.getMonth() + 1).padStart(2, '0');
+  const day = String(dt.getDate()).padStart(2, '0');
+  return `MacroSynthAI_Report_${y}${m}${day}.pdf`;
+}
+
+async function runWorkflow(dispatch, signal, period) {
   const upd = (progress, currentStep) =>
     dispatch({ type: 'UPDATE_PROGRESS', progress, currentStep });
 
   const log = (message, logType = 'info') =>
     dispatch({ type: 'ADD_LOG', timestamp: new Date(), agent: 'Orchestrateur', message, logType });
 
+  const startLabel = fmtPeriodDate(period.start);
+  const endLabel   = fmtPeriodDate(period.end);
+  const periodStr  = `${startLabel} – ${endLabel}`;
+  const pdfName    = pdfFilename(period.end);
+  // Short: "DD/MM–DD/MM/YYYY" for email subject
+  const periodShort = `${new Date(period.start).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}–${endLabel}`;
+
   try {
-    log('🚀 MacroSynthAI workflow initiated — période : 01/04/2026 – 28/04/2026');
+    log(`🚀 MacroSynthAI workflow initiated — période : ${periodStr}`);
 
     // ── Étape 1 : Collecte des sources ───────────────────────────
     upd(5, 'Étape 1/4 — macro_research_collector');
-    log('Étape 1 → appel macro_research_collector…');
+    log(`Étape 1 → appel macro_research_collector — période : ${periodStr}`);
     await runAgent('collector', dispatch, signal);
     log('✅ [QC Étape 1] research_data stocké — 14 sources analysées ≥ 2 ✓', 'success');
 
@@ -460,13 +484,13 @@ async function runWorkflow(dispatch, signal) {
       runAgent('pdf',       dispatch, signal),
     ]);
     log('✅ [QC Étape 3] dashboard_url stocké — Frame Dust live ✓', 'success');
-    log('✅ [QC Étape 3B] pdf_path stocké — /mnt/user-data/outputs/MacroSynthAI_Report_20260429.pdf ✓', 'success');
+    log(`✅ [QC Étape 3B] pdf_path stocké — /mnt/user-data/outputs/${pdfName} ✓`, 'success');
 
     // ── Étape 4 : Envoi email via Gmail MCP ──────────────────────
     upd(92, 'Étape 4/4 — Gmail MCP → alexdecarbof71@gmail.com');
     log('Étape 4 → Gmail MCP — destinataire : alexdecarbof71@gmail.com');
-    log('Préparation email — objet : "MacroSynthAI — Note de recherche macro 01/04–28/04/2026"');
-    log('Pièce jointe : MacroSynthAI_Report_20260429.pdf (248 KB)');
+    log(`Préparation email — objet : "MacroSynthAI — Note de recherche macro ${periodShort}"`);
+    log(`Pièce jointe : ${pdfName} (248 KB)`);
     log('Corps email : 2 formats (PDF exécutif + dashboard_url) · 14 sources · 3 convergences principales');
     await sleepC(2_500, signal);
     log('📧 [Gmail MCP] Email envoyé — statut : 200 OK', 'success');
@@ -493,9 +517,13 @@ async function runWorkflow(dispatch, signal) {
 ───────────────────────────────────────────── */
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
 
   const signalRef = useRef({ cancelled: false });
   const clockRef  = useRef(null);
+
+  const dateRangeValid = dateRange.start && dateRange.end
+    && new Date(dateRange.start) < new Date(dateRange.end);
 
   /* ── Cleanup on unmount ─────────────────── */
   useEffect(() => () => {
@@ -506,16 +534,17 @@ export default function App() {
   /* ── startWorkflow ──────────────────────── */
   const startWorkflow = useCallback(async () => {
     if (state.globalStatus === 'running') return;
+    if (!dateRangeValid) return;
 
     const signal = { cancelled: false };
     signalRef.current = signal;
-    clockRef.current  = setInterval(() => {}, 100); // keep ref alive for cleanup
+    clockRef.current  = setInterval(() => {}, 100);
 
     dispatch({ type: 'START_WORKFLOW' });
-    await runWorkflow(dispatch, signal);
+    await runWorkflow(dispatch, signal, dateRange);
 
     clearInterval(clockRef.current);
-  }, [state.globalStatus]);
+  }, [state.globalStatus, dateRange, dateRangeValid]);
 
   const hasRun = state.globalStatus === 'success';
 
@@ -543,11 +572,20 @@ export default function App() {
         {/* ── Stats Bar ── */}
         <StatsBar isActive={hasRun} />
 
+        {/* ── Period Selector ── */}
+        <PeriodSelector
+          startDate={dateRange.start}
+          endDate={dateRange.end}
+          onChange={setDateRange}
+          disabled={state.globalStatus === 'running'}
+        />
+
         {/* ── Orchestrator ── */}
         <OrchestratorCard
           status={state.globalStatus}
           progress={state.progress}
           currentStep={state.currentStep}
+          canLaunch={!!dateRangeValid}
           onLaunch={startWorkflow}
           onReset={() => {
             signalRef.current.cancelled = true;
@@ -577,7 +615,7 @@ export default function App() {
         <div
           style={{
             textAlign:   'center',
-            color:       C.textDim,
+            color:       '#666666',
             fontSize:    11,
             paddingBottom: 8,
           }}

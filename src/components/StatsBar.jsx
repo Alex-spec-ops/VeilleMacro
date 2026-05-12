@@ -102,7 +102,7 @@ export function StatsBar({ isActive }) {
               fontWeight:    700,
               letterSpacing: '0.10em',
               textTransform: 'uppercase',
-              color:         C.textDim,
+              color:         '#555555',
               marginBottom:  6,
             }}
           >
@@ -114,7 +114,7 @@ export function StatsBar({ isActive }) {
             style={{
               fontSize:   32,
               fontWeight: 800,
-              color:      isActive ? C.text : C.textDim,
+              color:      isActive ? C.text : '#888888',
               lineHeight: 1,
               marginBottom: 6,
               transition: 'color 400ms ease',
@@ -128,7 +128,7 @@ export function StatsBar({ isActive }) {
             style={{
               fontSize:   11,
               fontWeight: 600,
-              color:      isActive ? s.color : C.textDim,
+              color:      isActive ? s.color : '#888888',
               transition: 'color 400ms ease',
             }}
           >

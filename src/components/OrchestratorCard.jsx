@@ -11,10 +11,11 @@ const MONO = "'Monaco','Courier New',monospace";
  * Gradient hero section — purple-to-blue, vibrant Stripe-style.
  * Rotating radial glow in background.
  */
-export function OrchestratorCard({ status, progress, currentStep, onLaunch, onReset }) {
-  const isRunning = status === 'running';
-  const isSuccess = status === 'success';
-  const isIdle    = status === 'idle';
+export function OrchestratorCard({ status, progress, currentStep, onLaunch, onReset, canLaunch = true }) {
+  const isRunning   = status === 'running';
+  const isSuccess   = status === 'success';
+  const isIdle      = status === 'idle';
+  const launchReady = canLaunch && !isRunning;
 
   return (
     <div
@@ -79,7 +80,7 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
               <div
                 style={{
                   fontSize:      10,
-                  color:         'rgba(255,255,255,0.55)',
+                  color:         'rgba(255,255,255,0.82)',
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
                   marginBottom:  4,
@@ -101,7 +102,7 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
                 style={{
                   fontSize:   10,
                   fontFamily: MONO,
-                  color:      'rgba(255,255,255,0.45)',
+                  color:      'rgba(255,255,255,0.75)',
                   marginTop:  3,
                 }}
               >
@@ -184,7 +185,7 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
                   marginTop:  10,
                   fontSize:   11,
                   fontFamily: MONO,
-                  color:      'rgba(255,255,255,0.65)',
+                  color:      'rgba(255,255,255,0.88)',
                 }}
               >
                 ▶ {currentStep}
@@ -212,7 +213,7 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
               marginBottom: 22,
               fontSize:     12,
               fontFamily:   MONO,
-              color:        'rgba(255,255,255,0.4)',
+              color:        'rgba(255,255,255,0.75)',
             }}
           >
             ○ Prêt à démarrer le workflow…
@@ -226,7 +227,8 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
           <button
             className="btn-launch"
             onClick={onLaunch}
-            disabled={isRunning}
+            disabled={!launchReady}
+            title={!canLaunch && !isRunning ? 'Sélectionnez une période d\'analyse pour démarrer' : undefined}
             style={{
               flex:           1,
               display:        'flex',
@@ -234,20 +236,22 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
               justifyContent: 'center',
               gap:            10,
               padding:        '14px 24px',
-              background:     isRunning ? 'rgba(255,255,255,0.14)' : '#ffffff',
-              color:          isRunning ? 'rgba(255,255,255,0.55)' : C.blue,
+              background:     !launchReady ? 'rgba(255,255,255,0.14)' : '#ffffff',
+              color:          !launchReady ? 'rgba(255,255,255,0.45)' : C.blue,
               border:         'none',
               borderRadius:   12,
               fontSize:       14,
               fontWeight:     700,
-              cursor:         isRunning ? 'not-allowed' : 'pointer',
-              boxShadow:      isRunning ? 'none' : '0 4px 16px rgba(0,0,0,0.18)',
-              opacity:        isRunning ? 0.7 : 1,
+              cursor:         launchReady ? 'pointer' : 'not-allowed',
+              boxShadow:      launchReady ? '0 4px 16px rgba(0,0,0,0.18)' : 'none',
+              opacity:        launchReady ? 1 : 0.6,
             }}
           >
             {isRunning
               ? <><Loader2 size={16} color="rgba(255,255,255,0.7)" className="spin" /> Running…</>
-              : <>🚀 Launch MacroSynthAI</>
+              : !canLaunch
+                ? <>📅 Sélectionnez une période</>
+                : <>🚀 Launch MacroSynthAI</>
             }
           </button>
 

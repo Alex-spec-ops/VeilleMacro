@@ -58,7 +58,7 @@ export function AgentCard({ agent, config }) {
     );
   } else {
     timerNode = (
-      <span style={{ color: C.textDim, fontSize: 12 }}>Waiting…</span>
+      <span style={{ color: '#666666', fontSize: 12 }}>Waiting…</span>
     );
   }
 
@@ -144,7 +144,7 @@ export function AgentCard({ agent, config }) {
               style={{
                 fontSize:      14,
                 fontWeight:    700,
-                color:         isIdle ? C.textMuted : C.text,
+                color:         isIdle ? '#555555' : C.text,
                 lineHeight:    1.2,
                 letterSpacing: '-0.01em',
               }}
@@ -155,7 +155,7 @@ export function AgentCard({ agent, config }) {
               style={{
                 fontSize:   10,
                 fontFamily: MONO,
-                color:      C.textDim,
+                color:      '#666666',
                 marginTop:  3,
                 letterSpacing: '0.03em',
               }}
@@ -172,7 +172,7 @@ export function AgentCard({ agent, config }) {
       <p
         style={{
           fontSize:    12,
-          color:       C.textMuted,
+          color:       '#444444',
           lineHeight:  1.65,
           margin:      '0 0 16px',
         }}
