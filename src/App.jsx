@@ -5,8 +5,8 @@ import { OrchestratorCard } from './components/OrchestratorCard.jsx';
 import { AgentCard }        from './components/AgentCard.jsx';
 import { ExecutionLog }     from './components/ExecutionLog.jsx';
 
-import { C }               from './constants.js';
-import { inferLogType }    from './utils.js';
+import { C }                        from './constants.js';
+import { inferLogType, sleep }      from './utils.js';
 
 /* ─────────────────────────────────────────────
    AGENT DEFINITIONS  (metadata, no state)
@@ -15,18 +15,43 @@ const AGENTS = {
   collector: {
     id: 'collector', name: 'macro_research_collector',
     label: 'Collecte Sources', emoji: '🔍', color: C.blue,
-    simulatedDuration: 25_000,
-    desc: 'Collecte et agrège les sources macro-économiques mondiales via APIs et scraping.',
+    simulatedDuration: 48_000,
+    desc: 'Collecte les publications récentes de 22 stratégistes macro via web_search & web_fetch. Analyse structurée JSON par source.',
     logs: [
-      '🔍 Searching for Jurrien Timmer publications...',
-      '✅ Found Timmer publication (15/04/2026)',
-      '🔍 Searching for Michael Cembalest publications...',
-      '✅ Found EOTM publication (10/04/2026)',
-      '🔍 Searching for Jeremy Grantham...',
-      '❌ No recent publication from Grantham',
-      '📊 Analysis: 4/6 sources collected successfully',
+      // ── Sources 1–3 (high priority) ──────────────────────────────
+      '🔍 [1/22] web_search → Jurrien Timmer · Fidelity Insights (timmer-global-macro-view)…',
+      '✅ [1/22] Timmer "Broadening Out" found — 28/04/2026 · web_fetch OK (4 200 tokens)',
+      '🔍 [2/22] web_search → Michael Cembalest · EOTM (jpmorgan.com/am/eotm)…',
+      '✅ [2/22] EOTM "The Debt Problem" found — 22/04/2026 · web_fetch OK (6 800 tokens)',
+      '🔍 [3/22] web_search → Jeremy Grantham · GMO Quarterly Letter (gmo.com/europe)…',
+      '❌ [3/22] No GMO publication in the requested period — added to sources_not_found',
+      // ── Sources 4–8 ───────────────────────────────────────────────
+      '🔍 [4/22] web_search → Marko Papic · BCA GeoMacro (bcaresearch.com)…',
+      '✅ [4/22] BCA GeoMacro Strategy found — 25/04/2026 · web_fetch OK (3 100 tokens)',
+      '🔍 [5/22] web_search → François Trahan · BMO Capital (capitalmarkets.bmo.com)…',
+      '⚠️ [5/22] BMO paywall detected — partial metadata only (title + date extracted)',
+      '🔍 [6/22] web_search → Howard Marks · Oaktree Memo (oaktreecapital.com/insights)…',
+      '✅ [6/22] Marks Memo "On Bubble Watch" found — 15/04/2026 · web_fetch OK (5 400 tokens)',
+      '🔍 [7/22] web_search → Albert Edwards · SG Global Strategy Weekly (sgmarkets.com)…',
+      '✅ [7/22] Edwards "Ice Age Still Intact" found — 24/04/2026 · web_fetch OK (2 900 tokens)',
+      '🔍 [8/22] web_search → Bill Ackman · Pershing Square letters (pershingsquareholdings.com)…',
+      '❌ [8/22] No shareholder letter in period — added to sources_not_found',
+      // ── Sources 9–15 (batch) ──────────────────────────────────────
+      '🔍 [9-15/22] Batch scan: Elliott · Burniske · Asness · Saravelos · Currie · Kelly · Summers…',
+      '✅ [11/22] Cliff Asness · AQR "Value Is Still Cheap" — 20/04/2026',
+      '✅ [12/22] George Saravelos · DB FX note — 26/04/2026 (via x.com/GSaravelos)',
+      '✅ [15/22] Larry Summers · Bloomberg op-ed — 24/04/2026',
+      '❌ [9/22] Bob Elliott — no public post in period · [14/22] Kevin Kelly behind paywall',
+      // ── Sources 16–22 (batch) ─────────────────────────────────────
+      '🔍 [16-22/22] Batch scan: Mauboussin · El-Erian · Roubini · Andurand · Druckenmiller · Buffett · Pozsar…',
+      '✅ [17/22] Mohamed El-Erian · Bloomberg "Fed Credibility" — 27/04/2026',
+      '✅ [18/22] Nouriel Roubini · Project Syndicate — 21/04/2026',
+      '✅ [21/22] Warren Buffett · BRK Annual Letter (berkshirehathaway.com) — 12/04/2026',
+      '❌ [22/22] Zoltan Pozsar — account suspended · no accessible publication',
+      // ── Final tally ───────────────────────────────────────────────
+      '📊 Tally: 14 found · 3 partial (paywall) · 5 not found · 0 hallucinated',
     ],
-    doneMsg: '✅ Collector completed — 4/6 sources collected',
+    doneMsg: '✅ Collector completed — 14/22 sources · 3 partial · period 01/04–28/04/2026',
   },
   synthesis: {
     id: 'synthesis', name: 'comparative_synthesis_agent',
@@ -141,8 +166,6 @@ function reducer(state, action) {
 /* ─────────────────────────────────────────────
    SIMULATION HELPERS
 ───────────────────────────────────────────── */
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
 /** Cancellable sleep — polls every 150 ms. */
 function sleepC(ms, signal) {
   const POLL = 150;
