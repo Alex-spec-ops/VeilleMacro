@@ -6,8 +6,7 @@ import { C } from '../constants.js';
 /**
  * Header({ status, lastRun })
  *
- * Minimal professional top bar — no gradients, no decorative elements.
- * Single bottom border. Sans-serif branding.
+ * White top bar — logo square, gradient brand name, status on right.
  */
 export function Header({ status, lastRun }) {
   const lastRunLabel = timeAgo(lastRun);
@@ -15,64 +14,84 @@ export function Header({ status, lastRun }) {
   return (
     <header
       style={{
-        background: C.card,
-        borderBottom: `1px solid ${C.border}`,
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        padding: '0 28px',
-        height: 48,
-        display: 'flex',
-        alignItems: 'center',
+        background:     '#ffffff',
+        borderBottom:   `2px solid ${C.border}`,
+        boxShadow:      '0 1px 3px rgba(0,0,0,0.04)',
+        position:       'sticky',
+        top:            0,
+        zIndex:         50,
+        padding:        '0 32px',
+        height:         64,
+        display:        'flex',
+        alignItems:     'center',
         justifyContent: 'space-between',
       }}
     >
       {/* ── Brand ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        {/* Logo square */}
+        <div
           style={{
-            fontSize: 14,
-            fontWeight: 800,
-            color: C.text,
-            letterSpacing: '-0.02em',
+            width:          40,
+            height:         40,
+            background:     `linear-gradient(135deg, ${C.coral} 0%, ${C.orange} 100%)`,
+            borderRadius:   11,
+            display:        'flex',
+            alignItems:     'center',
+            justifyContent: 'center',
+            fontWeight:     800,
+            fontSize:       14,
+            color:          '#ffffff',
+            letterSpacing:  '-0.02em',
+            flexShrink:     0,
+            boxShadow:      '0 4px 14px rgba(255, 107, 107, 0.32)',
           }}
         >
-          MacroSynthAI
-        </span>
+          MS
+        </div>
 
-        <span style={{ color: C.blue, fontSize: 16, lineHeight: 1, userSelect: 'none' }}>·</span>
-
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 500,
-            color: C.textMuted,
-            letterSpacing: '0.01em',
-          }}
-        >
-          Agent Orchestration Platform
-        </span>
+        <div>
+          <div
+            style={{
+              fontSize:             16,
+              fontWeight:           800,
+              background:           `linear-gradient(135deg, ${C.coral} 0%, ${C.teal} 100%)`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor:  'transparent',
+              backgroundClip:       'text',
+              letterSpacing:        '-0.02em',
+              lineHeight:           1.1,
+            }}
+          >
+            MacroSynthAI
+          </div>
+          <div
+            style={{
+              fontSize:   11,
+              color:      C.textDim,
+              marginTop:  2,
+              fontWeight: 500,
+            }}
+          >
+            Agent Orchestration Platform
+          </div>
+        </div>
       </div>
 
       {/* ── Right: last run + status ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div
-          style={{
-            fontSize: 9,
-            fontFamily: "'SF Mono','Fira Code','Consolas',monospace",
-            color: C.textDim,
-            textAlign: 'right',
-            lineHeight: 1.7,
-            letterSpacing: '0.05em',
-          }}
-        >
-          <div style={{ textTransform: 'uppercase' }}>Last run</div>
-          <div style={{ color: lastRunLabel ? C.textMuted : C.textDim }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.5 }}>Last run</div>
+          <div
+            style={{
+              fontSize:   12,
+              fontWeight: 600,
+              color:      lastRunLabel ? C.textMuted : C.textDim,
+            }}
+          >
             {lastRunLabel ?? '—'}
           </div>
         </div>
-
-        <span style={{ width: 1, height: 16, background: C.border, display: 'inline-block' }} />
 
         <StatusBadge status={status} size="md" />
       </div>

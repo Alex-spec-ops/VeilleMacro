@@ -4,6 +4,7 @@ import { Header }           from './components/Header.jsx';
 import { OrchestratorCard } from './components/OrchestratorCard.jsx';
 import { AgentCard }        from './components/AgentCard.jsx';
 import { ExecutionLog }     from './components/ExecutionLog.jsx';
+import { StatsBar }         from './components/StatsBar.jsx';
 
 import { C }                        from './constants.js';
 import { inferLogType, sleep }      from './utils.js';
@@ -15,7 +16,7 @@ import { callGemini }               from './gemini.js';
 const AGENTS = {
   collector: {
     id: 'collector', name: 'macro_research_collector',
-    label: 'Collecte Sources', emoji: '🔍', color: C.blue,
+    label: 'Collecte Sources', emoji: '🔍', color: C.coral,
     simulatedDuration: 48_000,
     desc: 'Collecte les publications récentes de 22 stratégistes macro via web_search & web_fetch. Analyse structurée JSON par source.',
     logs: [
@@ -64,7 +65,7 @@ Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
   synthesis: {
     id: 'synthesis', name: 'comparative_synthesis_agent',
-    label: 'Analyse Comparative', emoji: '⚖️', color: C.teal,
+    label: 'Analyse Comparative', emoji: '⚖️', color: C.blue,
     simulatedDuration: 28_000,
     desc: 'Synthèse comparative croisée de qualité CIO : convergences ≥3 auteurs, divergences, nouvelles idées, risques agrégés.',
     logs: [
@@ -122,7 +123,7 @@ Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
   dashboard: {
     id: 'dashboard', name: 'dashboard_generator_agent',
-    label: 'Dashboard TSX', emoji: '📊', color: C.green,
+    label: 'Dashboard TSX', emoji: '📊', color: C.teal,
     simulatedDuration: 32_000,
     desc: 'Génère deux livrables : composant TSX shadcn/ui (Frame Dust) + fichier HTML autonome identique pixel-perfect.',
     logs: [
@@ -188,7 +189,7 @@ Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
   pdf: {
     id: 'pdf', name: 'pdf_report_generator',
-    label: 'Rapport PDF', emoji: '📄', color: C.amber,
+    label: 'Rapport PDF', emoji: '📄', color: C.orange,
     simulatedDuration: 26_000,
     desc: 'Génère un PDF exécutif 3 pages A4 via ReportLab (Python) : dashboard thématique, convergences, risques agrégés.',
     logs: [
@@ -516,7 +517,7 @@ export default function App() {
     clearInterval(clockRef.current);
   }, [state.globalStatus]);
 
-  const MONO = "'SF Mono','Fira Code','Consolas',monospace";
+  const hasRun = state.globalStatus === 'success';
 
   return (
     <div
@@ -524,21 +525,25 @@ export default function App() {
         minHeight:  '100vh',
         background: C.bg,
         color:      C.text,
-        fontFamily: "'Inter','Helvetica Neue',Arial,sans-serif",
+        fontFamily: "'Inter','Helvetica Neue',-apple-system,BlinkMacSystemFont,sans-serif",
       }}
     >
       <Header status={state.globalStatus} lastRun={state.lastRun} />
 
       <main
         style={{
-          maxWidth:      1280,
+          maxWidth:      1440,
           margin:        '0 auto',
-          padding:       '20px 28px',
+          padding:       '28px 32px',
           display:       'flex',
           flexDirection: 'column',
-          gap:           16,
+          gap:           24,
         }}
       >
+        {/* ── Stats Bar ── */}
+        <StatsBar isActive={hasRun} />
+
+        {/* ── Orchestrator ── */}
         <OrchestratorCard
           status={state.globalStatus}
           progress={state.progress}
@@ -551,57 +556,29 @@ export default function App() {
           }}
         />
 
-        {/* ── Pipeline section header ── */}
+        {/* ── Agent cards — 3-col grid, 4th wraps to next row ── */}
         <div
           style={{
-            display:      'flex',
-            alignItems:   'center',
-            justifyContent: 'space-between',
-            paddingBottom: 6,
-            borderBottom: `1px solid ${C.border}`,
+            display:             'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap:                 24,
           }}
         >
-          <span
-            style={{
-              fontSize:      9,
-              fontFamily:    MONO,
-              fontWeight:    700,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color:         C.textDim,
-            }}
-          >
-            Pipeline — 4 Agents
-          </span>
-          <span
-            style={{
-              fontSize:      9,
-              fontFamily:    MONO,
-              color:         C.textDim,
-              letterSpacing: '0.06em',
-            }}
-          >
-            Collector → Synthesis → Dashboard ∥ PDF → Gmail
-          </span>
+          <AgentCard agent={state.agents.collector} config={AGENTS.collector} />
+          <AgentCard agent={state.agents.synthesis} config={AGENTS.synthesis} />
+          <AgentCard agent={state.agents.dashboard} config={AGENTS.dashboard} />
+          <AgentCard agent={state.agents.pdf}       config={AGENTS.pdf} />
         </div>
 
-        {/* ── Agent strips (stacked, no gap between them = seamless rows) ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <AgentCard agent={state.agents.collector} config={AGENTS.collector} index={1} />
-          <AgentCard agent={state.agents.synthesis} config={AGENTS.synthesis} index={2} />
-          <AgentCard agent={state.agents.dashboard} config={AGENTS.dashboard} index={3} />
-          <AgentCard agent={state.agents.pdf}       config={AGENTS.pdf}       index={4} />
-        </div>
-
+        {/* ── Execution Log ── */}
         <ExecutionLog logs={state.logs} />
 
+        {/* ── Footer ── */}
         <div
           style={{
-            textAlign:     'center',
-            color:         C.textDim,
-            fontSize:      9,
-            fontFamily:    MONO,
-            letterSpacing: '0.06em',
+            textAlign:   'center',
+            color:       C.textDim,
+            fontSize:    11,
             paddingBottom: 8,
           }}
         >

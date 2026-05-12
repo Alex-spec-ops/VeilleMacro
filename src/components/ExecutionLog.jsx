@@ -1,15 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import { C, LOG_COLORS, AGENT_EMOJI } from '../constants.js';
 
-const MONO = "'SF Mono','Fira Code','Consolas',monospace";
+const MONO = "'Monaco','Courier New',monospace";
 
 /**
  * ExecutionLog({ logs })
  *
- * Terminal-style log panel — clean professional header, aligned columns.
- * Auto-scrolls to latest entry on each new addition.
- *
- * Row format:  [HH:MM:SS]   [agent]   message
+ * Dark header (gradient #1a1a1a → #2d2d2d) + light content area.
+ * Traffic light controls + title in header.
+ * Monospace entries with colored log types.
  */
 export function ExecutionLog({ logs }) {
   const bottomRef = useRef(null);
@@ -26,43 +25,65 @@ export function ExecutionLog({ logs }) {
   return (
     <div
       style={{
-        background: C.card,
-        border: `1px solid ${C.border}`,
-        overflow: 'hidden',
+        background:   '#ffffff',
+        border:       `2px solid ${C.border}`,
+        borderRadius: 16,
+        overflow:     'hidden',
+        boxShadow:    '0 1px 3px rgba(0,0,0,0.06)',
       }}
     >
-      {/* ── Header ── */}
+      {/* ── Dark header ── */}
       <div
         style={{
-          padding: '7px 16px',
-          borderBottom: `1px solid ${C.border}`,
-          background: C.cardDeep,
-          display: 'flex',
-          alignItems: 'center',
+          background:     'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+          padding:        '14px 20px',
+          display:        'flex',
+          alignItems:     'center',
           justifyContent: 'space-between',
         }}
       >
-        <span
-          style={{
-            fontSize: 9,
-            fontFamily: MONO,
-            fontWeight: 700,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            color: C.textDim,
-          }}
-        >
-          Execution Log
-        </span>
+        {/* Title + traffic lights */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Traffic lights */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            {[C.coral, C.sunshine, C.teal].map((c, i) => (
+              <span
+                key={i}
+                style={{
+                  width:        13,
+                  height:       13,
+                  background:   c,
+                  borderRadius: '50%',
+                  display:      'inline-block',
+                  cursor:       'default',
+                }}
+              />
+            ))}
+          </div>
 
+          <span
+            style={{
+              fontSize:      12,
+              fontFamily:    MONO,
+              fontWeight:    600,
+              letterSpacing: '0.08em',
+              color:         'rgba(255,255,255,0.7)',
+              userSelect:    'none',
+            }}
+          >
+            ▶ Execution Log
+          </span>
+        </div>
+
+        {/* Entry count */}
         <span
           style={{
-            fontSize: 9,
-            fontFamily: MONO,
-            color: C.textDim,
-            background: C.bg,
-            border: `1px solid ${C.border}`,
-            padding: '2px 7px',
+            fontSize:      10,
+            fontFamily:    MONO,
+            color:         'rgba(255,255,255,0.4)',
+            background:    'rgba(255,255,255,0.08)',
+            padding:       '3px 9px',
+            borderRadius:  5,
             letterSpacing: '0.06em',
           }}
         >
@@ -70,94 +91,70 @@ export function ExecutionLog({ logs }) {
         </span>
       </div>
 
-      {/* ── Column headers ── */}
+      {/* ── Scrollable content ── */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '4px 16px',
-          background: C.cardDeep,
-          borderBottom: `1px solid ${C.border}`,
-          gap: 0,
-        }}
-      >
-        <span style={{ width: 72, flexShrink: 0, fontSize: 8, fontFamily: MONO, color: C.textDim, letterSpacing: '0.10em', textTransform: 'uppercase' }}>
-          Time
-        </span>
-        <span style={{ width: 214, flexShrink: 0, fontSize: 8, fontFamily: MONO, color: C.textDim, letterSpacing: '0.10em', textTransform: 'uppercase', paddingLeft: 6 }}>
-          Agent
-        </span>
-        <span style={{ flex: 1, fontSize: 8, fontFamily: MONO, color: C.textDim, letterSpacing: '0.10em', textTransform: 'uppercase' }}>
-          Message
-        </span>
-      </div>
-
-      {/* ── Scrollable body ── */}
-      <div
-        style={{
-          maxHeight: 300,
-          overflowY: 'auto',
-          background: C.bg,
-          scrollbarWidth: 'thin',
-          scrollbarColor: `${C.border} transparent`,
+          maxHeight:      420,
+          overflowY:      'auto',
+          padding:        '12px 0 4px',
+          background:     '#FAFAFA',
+          fontFamily:     MONO,
+          fontSize:       12,
         }}
       >
         {logs.length === 0 ? (
           <div
             style={{
-              textAlign: 'center',
-              color: C.textDim,
-              fontSize: 11,
+              textAlign:  'center',
+              color:      C.textDim,
+              fontSize:   12,
+              padding:    '32px 0',
               fontFamily: MONO,
-              padding: '28px 0',
             }}
           >
-            ─ waiting for workflow to start ─
+            — waiting for workflow to start —
           </div>
         ) : (
           logs.map((entry, i) => {
-            const typeColor = LOG_COLORS[entry.logType] ?? C.text;
-            const agentEmoji = AGENT_EMOJI[entry.agent] ?? '◆';
-            const isEven = i % 2 === 0;
+            const typeColor  = LOG_COLORS[entry.logType] ?? C.textMuted;
+            const agentEmoji = AGENT_EMOJI[entry.agent]  ?? '◆';
+            const isEven     = i % 2 === 0;
 
             return (
               <div
                 key={entry.id}
-                className="animate-fade-in"
+                className="animate-slide-in log-row"
                 style={{
-                  display: 'flex',
+                  display:    'flex',
                   alignItems: 'baseline',
-                  padding: '3px 16px',
-                  fontFamily: MONO,
-                  fontSize: 10,
+                  padding:    '4px 20px',
                   lineHeight: 1.6,
-                  background: isEven ? C.bg : `${C.cardDeep}99`,
-                  borderBottom: `1px solid ${C.border}18`,
+                  background: isEven ? '#FAFAFA' : '#ffffff',
+                  borderBottom: `1px solid ${C.borderDim}`,
+                  gap:        0,
                 }}
               >
-                {/* [HH:MM:SS] */}
+                {/* Timestamp */}
                 <span
                   style={{
-                    width: 72,
+                    minWidth:   75,
+                    color:      '#9CA3AF',
+                    fontWeight: 600,
                     flexShrink: 0,
-                    color: C.textDim,
-                    letterSpacing: '0.02em',
+                    fontSize:   11,
                   }}
                 >
-                  [{formatTs(entry.timestamp)}]
+                  {formatTs(entry.timestamp)}
                 </span>
 
-                {/* Agent emoji + name */}
+                {/* Agent */}
                 <span
                   style={{
-                    width: 214,
-                    flexShrink: 0,
-                    color: typeColor,
+                    minWidth:   165,
+                    color:      C.blue,
                     fontWeight: 700,
-                    paddingLeft: 6,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    fontSize:   11,
                   }}
                 >
                   {agentEmoji} [{entry.agent}]
@@ -166,12 +163,15 @@ export function ExecutionLog({ logs }) {
                 {/* Message */}
                 <span
                   style={{
-                    flex: 1,
-                    color: entry.logType === 'success' ? C.statusOk
-                      : entry.logType === 'error' ? C.statusErr
-                        : entry.logType === 'warning' ? C.statusWarn
-                          : C.text,
-                    wordBreak: 'break-word',
+                    flex:      1,
+                    color: entry.logType === 'success' ? C.forest
+                         : entry.logType === 'error'   ? C.coral
+                         : entry.logType === 'warning' ? C.orange
+                         : entry.logType === 'info'    ? C.blue
+                         :                               '#374151',
+                    fontWeight:   entry.logType === 'success' || entry.logType === 'error' ? 600 : 400,
+                    wordBreak:    'break-word',
+                    fontSize:     12,
                   }}
                 >
                   {entry.message}
@@ -181,7 +181,6 @@ export function ExecutionLog({ logs }) {
           })
         )}
 
-        {/* Scroll anchor */}
         <div ref={bottomRef} />
       </div>
     </div>
