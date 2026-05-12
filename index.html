@@ -1,71 +1,156 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VeilleMacro — Agent Orchestrator</title>
-    <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
-      body {
-        background: #060e1a;
-        font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-        -webkit-font-smoothing: antialiased;
-      }
-      #root { min-height: 100vh; }
 
-      @keyframes spin { to { transform: rotate(360deg); } }
-      @keyframes fade-in {
-        from { opacity: 0; transform: translateY(-4px); }
-        to   { opacity: 1; transform: translateY(0); }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VeilleMacro — Agent Orchestrator</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border-radius: 0 !important;
+    }
+
+    body {
+      background: #060e1a;
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #root {
+      min-height: 100vh;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
-      @keyframes animate-pulse-kf {
-        0%, 100% { opacity: 1; }
-        50%       { opacity: 0.5; }
-      }
-      @keyframes beam {
-        0%   { left: -60%; }
-        100% { left: 120%; }
-      }
-      @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50%       { opacity: 0.3; }
-      }
-      @keyframes pulse-border {
-        0%, 100% {
-          border-color: rgba(22, 104, 219, 0.4);
-          box-shadow: 0 0 0 rgba(22, 104, 219, 0);
-        }
-        50% {
-          border-color: rgba(22, 104, 219, 0.9);
-          box-shadow: 0 0 14px rgba(22, 104, 219, 0.25);
-        }
+    }
+
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
       }
 
-      .spin          { animation: spin 1s linear infinite; }
-      .animate-fade-in { animation: fade-in 0.3s ease forwards; }
-      .animate-pulse { animation: animate-pulse-kf 2s ease-in-out infinite; }
-      .blink         { animation: blink 1.2s ease-in-out infinite; }
-      .running-glow  { animation: pulse-border 2s ease-in-out infinite; }
-
-      /* Transitions */
-      .transition-card     { transition: border-color 300ms ease, box-shadow 300ms ease; }
-      .transition-progress { transition: width 500ms ease-out !important; }
-
-      /* Buttons */
-      .btn-launch {
-        transition: opacity 150ms ease, filter 120ms ease;
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
-      .btn-launch:not(:disabled):hover  { filter: brightness(1.15); }
-      .btn-launch:not(:disabled):active { opacity: 0.82; }
-      .btn-reset {
-        transition: color 150ms ease, background 150ms ease;
+    }
+
+    @keyframes animate-pulse-kf {
+
+      0%,
+      100% {
+        opacity: 1;
       }
-      .btn-reset:hover  { color: #c5d4e8 !important; background: #0e2240 !important; }
-      .btn-reset:active { opacity: 0.75; }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    @keyframes beam {
+      0% {
+        left: -60%;
+      }
+
+      100% {
+        left: 120%;
+      }
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    @keyframes pulse-border {
+
+      0%,
+      100% {
+        border-color: rgba(22, 104, 219, 0.4);
+        box-shadow: 0 0 0 rgba(22, 104, 219, 0);
+      }
+
+      50% {
+        border-color: rgba(22, 104, 219, 0.9);
+        box-shadow: 0 0 14px rgba(22, 104, 219, 0.25);
+      }
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
+    .animate-fade-in {
+      animation: fade-in 0.3s ease forwards;
+    }
+
+    .animate-pulse {
+      animation: animate-pulse-kf 2s ease-in-out infinite;
+    }
+
+    .blink {
+      animation: blink 1.2s ease-in-out infinite;
+    }
+
+    .running-glow {
+      animation: pulse-border 2s ease-in-out infinite;
+    }
+
+    /* Transitions */
+    .transition-card {
+      transition: border-color 300ms ease, box-shadow 300ms ease;
+    }
+
+    .transition-progress {
+      transition: width 500ms ease-out !important;
+    }
+
+    /* Buttons */
+    .btn-launch {
+      transition: opacity 150ms ease, filter 120ms ease;
+    }
+
+    .btn-launch:not(:disabled):hover {
+      filter: brightness(1.15);
+    }
+
+    .btn-launch:not(:disabled):active {
+      opacity: 0.82;
+    }
+
+    .btn-reset {
+      transition: color 150ms ease, background 150ms ease;
+    }
+
+    .btn-reset:hover {
+      color: #c5d4e8 !important;
+      background: #0e2240 !important;
+    }
+
+    .btn-reset:active {
+      opacity: 0.75;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

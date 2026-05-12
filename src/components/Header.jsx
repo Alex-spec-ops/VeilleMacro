@@ -15,15 +15,15 @@ export function Header({ status, lastRun }) {
   return (
     <header
       style={{
-        background:     C.card,
-        borderBottom:   `1px solid ${C.border}`,
-        position:       'sticky',
-        top:            0,
-        zIndex:         50,
-        padding:        '0 28px',
-        height:         48,
-        display:        'flex',
-        alignItems:     'center',
+        background: C.card,
+        borderBottom: `1px solid ${C.border}`,
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        padding: '0 28px',
+        height: 48,
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'space-between',
       }}
     >
@@ -31,9 +31,9 @@ export function Header({ status, lastRun }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span
           style={{
-            fontSize:      14,
-            fontWeight:    800,
-            color:         C.text,
+            fontSize: 14,
+            fontWeight: 800,
+            color: C.text,
             letterSpacing: '-0.02em',
           }}
         >
@@ -44,9 +44,9 @@ export function Header({ status, lastRun }) {
 
         <span
           style={{
-            fontSize:      11,
-            fontWeight:    500,
-            color:         C.textMuted,
+            fontSize: 11,
+            fontWeight: 500,
+            color: C.textMuted,
             letterSpacing: '0.01em',
           }}
         >
@@ -58,10 +58,10 @@ export function Header({ status, lastRun }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <div
           style={{
-            fontSize:   9,
+            fontSize: 9,
             fontFamily: "'SF Mono','Fira Code','Consolas',monospace",
-            color:      C.textDim,
-            textAlign:  'right',
+            color: C.textDim,
+            textAlign: 'right',
             lineHeight: 1.7,
             letterSpacing: '0.05em',
           }}

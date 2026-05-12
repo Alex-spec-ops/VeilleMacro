@@ -19,8 +19,8 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
   const isSuccess = status === 'success';
 
   const accentColor = isRunning ? C.blue
-                    : isSuccess ? C.statusOk
-                    :             C.border;
+    : isSuccess ? C.statusOk
+      : C.border;
 
   const MONO = "'SF Mono','Fira Code','Consolas',monospace";
 
@@ -28,36 +28,36 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
     <div
       className={isRunning ? 'running-glow' : 'transition-card'}
       style={{
-        background:   C.card,
-        borderTop:    `1px solid ${C.border}`,
-        borderRight:  `1px solid ${C.border}`,
+        background: C.card,
+        borderTop: `1px solid ${C.border}`,
+        borderRight: `1px solid ${C.border}`,
         borderBottom: `1px solid ${C.border}`,
-        borderLeft:   `3px solid ${accentColor}`,
+        borderLeft: `3px solid ${accentColor}`,
       }}
     >
 
       {/* ── Zone 1 : Identity ── */}
       <div
         style={{
-          display:        'flex',
-          alignItems:     'center',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          padding:        '14px 20px',
-          borderBottom:   `1px solid ${C.border}`,
+          padding: '14px 20px',
+          borderBottom: `1px solid ${C.border}`,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {/* Square icon */}
           <div
             style={{
-              width:          38,
-              height:         38,
-              background:     `${C.blue}0d`,
-              border:         `1px solid ${isRunning ? C.blue + '44' : C.border}`,
-              display:        'flex',
-              alignItems:     'center',
+              width: 38,
+              height: 38,
+              background: `${C.blue}0d`,
+              border: `1px solid ${isRunning ? C.blue + '44' : C.border}`,
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
-              flexShrink:     0,
+              flexShrink: 0,
             }}
           >
             {isRunning
@@ -69,21 +69,21 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
           <div>
             <div
               style={{
-                fontSize:      8,
-                fontFamily:    MONO,
-                color:         C.textDim,
+                fontSize: 8,
+                fontFamily: MONO,
+                color: C.textDim,
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase',
-                marginBottom:  4,
+                marginBottom: 4,
               }}
             >
               Orchestrateur principal
             </div>
             <div
               style={{
-                fontSize:      15,
-                fontWeight:    700,
-                color:         isSuccess ? C.statusOk : C.text,
+                fontSize: 15,
+                fontWeight: 700,
+                color: isSuccess ? C.statusOk : C.text,
                 letterSpacing: '-0.01em',
               }}
             >
@@ -91,10 +91,10 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
             </div>
             <div
               style={{
-                fontSize:      9,
-                fontFamily:    MONO,
-                color:         C.textDim,
-                marginTop:     3,
+                fontSize: 9,
+                fontFamily: MONO,
+                color: C.textDim,
+                marginTop: 3,
                 letterSpacing: '0.04em',
               }}
             >
@@ -111,27 +111,27 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
         <div style={{ padding: '10px 20px', borderBottom: `1px solid ${C.border}` }}>
           <div
             style={{
-              display:        'flex',
+              display: 'flex',
               justifyContent: 'space-between',
-              alignItems:     'baseline',
-              marginBottom:   6,
+              alignItems: 'baseline',
+              marginBottom: 6,
             }}
           >
             <span
               style={{
-                fontSize:   12,
+                fontSize: 12,
                 fontFamily: MONO,
                 fontWeight: 700,
-                color:      isRunning ? C.blue : C.statusOk,
+                color: isRunning ? C.blue : C.statusOk,
               }}
             >
               {progress.toFixed(1)}%
             </span>
             <span
               style={{
-                fontSize:   9,
+                fontSize: 9,
                 fontFamily: MONO,
-                color:      C.textDim,
+                color: C.textDim,
                 letterSpacing: '0.06em',
               }}
             >
@@ -150,10 +150,10 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
       {/* ── Zone 3 : Current step ── */}
       <div
         style={{
-          display:    'flex',
+          display: 'flex',
           alignItems: 'center',
-          gap:        10,
-          padding:    '9px 20px',
+          gap: 10,
+          padding: '9px 20px',
           borderBottom: `1px solid ${C.border}`,
           background: C.cardDeep,
         }}
@@ -161,8 +161,8 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
         <span
           style={{
             fontFamily: MONO,
-            fontSize:   11,
-            color:      isRunning ? C.blue : isSuccess ? C.statusOk : C.textDim,
+            fontSize: 11,
+            color: isRunning ? C.blue : isSuccess ? C.statusOk : C.textDim,
             flexShrink: 0,
           }}
         >
@@ -170,11 +170,11 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
         </span>
         <span
           style={{
-            fontSize:   11,
+            fontSize: 11,
             fontFamily: MONO,
-            color:      isRunning ? C.text
-                      : isSuccess ? C.statusOk
-                      :             C.textDim,
+            color: isRunning ? C.text
+              : isSuccess ? C.statusOk
+                : C.textDim,
           }}
         >
           {currentStep ?? (isSuccess
@@ -193,22 +193,22 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
           onClick={onLaunch}
           disabled={isRunning}
           style={{
-            flex:           1,
-            display:        'flex',
-            alignItems:     'center',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
-            gap:            8,
-            padding:        '9px 0',
-            border:         'none',
-            cursor:         isRunning ? 'not-allowed' : 'pointer',
-            background:     isRunning ? `${C.blue}1a` : C.blue,
-            color:          '#fff',
-            fontSize:       12,
-            fontFamily:     MONO,
-            fontWeight:     700,
-            letterSpacing:  '0.06em',
-            textTransform:  'uppercase',
-            opacity:        isRunning ? 0.5 : 1,
+            gap: 8,
+            padding: '9px 0',
+            border: 'none',
+            cursor: isRunning ? 'not-allowed' : 'pointer',
+            background: isRunning ? `${C.blue}1a` : C.blue,
+            color: '#fff',
+            fontSize: 12,
+            fontFamily: MONO,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            opacity: isRunning ? 0.5 : 1,
           }}
         >
           {isRunning
@@ -225,19 +225,19 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
           className="btn-reset"
           onClick={onReset}
           style={{
-            display:      'flex',
-            alignItems:   'center',
-            gap:          6,
-            padding:      '9px 18px',
-            background:   'transparent',
-            border:       'none',
-            cursor:       'pointer',
-            color:        C.textMuted,
-            fontSize:     11,
-            fontFamily:   MONO,
-            fontWeight:   600,
-            letterSpacing:'0.06em',
-            textTransform:'uppercase',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '9px 18px',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: C.textMuted,
+            fontSize: 11,
+            fontFamily: MONO,
+            fontWeight: 600,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
           }}
         >
           <RotateCcw size={11} /> Reset

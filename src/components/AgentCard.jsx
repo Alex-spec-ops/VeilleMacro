@@ -23,19 +23,19 @@ export function AgentCard({ agent, config, index }) {
   const isPending = status === 'pending';
   const isRunning = status === 'running';
   const isSuccess = status === 'success';
-  const isIdle    = status === 'idle';
+  const isIdle = status === 'idle';
 
   /* ── Left accent ── */
-  const accentColor = isRunning  ? color
-                    : isPending  ? C.statusPend
-                    : isSuccess  ? C.statusOk
-                    : status === 'error' ? C.statusErr
-                    :              C.border;
+  const accentColor = isRunning ? color
+    : isPending ? C.statusPend
+      : isSuccess ? C.statusOk
+        : status === 'error' ? C.statusErr
+          : C.border;
 
   /* ── Progress ── */
   const pct = isSuccess ? 100
-            : isRunning ? Math.min(99, (duration / simulatedDuration) * 100)
-            : 0;
+    : isRunning ? Math.min(99, (duration / simulatedDuration) * 100)
+      : 0;
 
   /* ── Timer ── */
   let timerNode;
@@ -72,30 +72,30 @@ export function AgentCard({ agent, config, index }) {
     <div
       className={isRunning ? 'running-glow transition-card' : 'transition-card'}
       style={{
-        display:      'flex',
-        alignItems:   'center',
-        height:       54,
-        background:   C.card,
-        borderTop:    `1px solid ${C.border}`,
-        borderRight:  `1px solid ${C.border}`,
+        display: 'flex',
+        alignItems: 'center',
+        height: 54,
+        background: C.card,
+        borderTop: `1px solid ${C.border}`,
+        borderRight: `1px solid ${C.border}`,
         borderBottom: `1px solid ${C.border}`,
-        borderLeft:   `3px solid ${accentColor}`,
-        paddingLeft:  12,
+        borderLeft: `3px solid ${accentColor}`,
+        paddingLeft: 12,
         paddingRight: 16,
-        gap:          12,
-        position:     'relative',
-        overflow:     'hidden',
+        gap: 12,
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
       {/* Horizontal scan beam */}
       {(isRunning || isPending) && (
         <div
           style={{
-            position:    'absolute',
+            position: 'absolute',
             top: 0, left: 0, right: 0,
-            height:      1,
-            background:  `linear-gradient(90deg,transparent,${isRunning ? color : C.statusPend},transparent)`,
-            animation:   'beam 2s linear infinite',
+            height: 1,
+            background: `linear-gradient(90deg,transparent,${isRunning ? color : C.statusPend},transparent)`,
+            animation: 'beam 2s linear infinite',
             pointerEvents: 'none',
           }}
         />
@@ -104,12 +104,12 @@ export function AgentCard({ agent, config, index }) {
       {/* ── Step number ── */}
       <span
         style={{
-          width:      18,
-          textAlign:  'right',
+          width: 18,
+          textAlign: 'right',
           flexShrink: 0,
-          fontSize:   9,
+          fontSize: 9,
           fontFamily: MONO,
-          color:      isIdle ? C.textDim : C.textMuted,
+          color: isIdle ? C.textDim : C.textMuted,
           fontWeight: 700,
           letterSpacing: '0.04em',
         }}
@@ -120,11 +120,11 @@ export function AgentCard({ agent, config, index }) {
       {/* ── Icon ── */}
       <div
         style={{
-          width:          24,
-          display:        'flex',
-          alignItems:     'center',
+          width: 24,
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
-          flexShrink:     0,
+          flexShrink: 0,
         }}
       >
         {(isRunning || isPending)
@@ -132,9 +132,9 @@ export function AgentCard({ agent, config, index }) {
           : (
             <span
               style={{
-                fontSize:  14,
+                fontSize: 14,
                 lineHeight: 1,
-                filter:    isIdle ? 'grayscale(1) opacity(0.25)' : 'none',
+                filter: isIdle ? 'grayscale(1) opacity(0.25)' : 'none',
               }}
             >
               {emoji}
@@ -147,9 +147,9 @@ export function AgentCard({ agent, config, index }) {
       <div style={{ width: 210, flexShrink: 0 }}>
         <div
           style={{
-            fontSize:   12,
+            fontSize: 12,
             fontWeight: 700,
-            color:      isIdle ? C.textMuted : C.text,
+            color: isIdle ? C.textMuted : C.text,
             lineHeight: 1.2,
             letterSpacing: '-0.01em',
           }}
@@ -158,10 +158,10 @@ export function AgentCard({ agent, config, index }) {
         </div>
         <div
           style={{
-            fontSize:   9,
+            fontSize: 9,
             fontFamily: MONO,
-            color:      C.textDim,
-            marginTop:  2,
+            color: C.textDim,
+            marginTop: 2,
             letterSpacing: '0.04em',
           }}
         >
@@ -182,15 +182,15 @@ export function AgentCard({ agent, config, index }) {
       {/* ── Percentage ── */}
       <span
         style={{
-          width:      42,
-          textAlign:  'right',
+          width: 42,
+          textAlign: 'right',
           flexShrink: 0,
           fontFamily: MONO,
-          fontSize:   11,
+          fontSize: 11,
           fontWeight: 700,
-          color:      isSuccess ? C.statusOk
-                    : isRunning ? color
-                    :             C.textDim,
+          color: isSuccess ? C.statusOk
+            : isRunning ? color
+              : C.textDim,
         }}
       >
         {pct.toFixed(0)}%

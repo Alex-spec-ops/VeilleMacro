@@ -27,29 +27,29 @@ export function ExecutionLog({ logs }) {
     <div
       style={{
         background: C.card,
-        border:     `1px solid ${C.border}`,
-        overflow:   'hidden',
+        border: `1px solid ${C.border}`,
+        overflow: 'hidden',
       }}
     >
       {/* ── Header ── */}
       <div
         style={{
-          padding:        '7px 16px',
-          borderBottom:   `1px solid ${C.border}`,
-          background:     C.cardDeep,
-          display:        'flex',
-          alignItems:     'center',
+          padding: '7px 16px',
+          borderBottom: `1px solid ${C.border}`,
+          background: C.cardDeep,
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
         <span
           style={{
-            fontSize:      9,
-            fontFamily:    MONO,
-            fontWeight:    700,
+            fontSize: 9,
+            fontFamily: MONO,
+            fontWeight: 700,
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            color:         C.textDim,
+            color: C.textDim,
           }}
         >
           Execution Log
@@ -57,12 +57,12 @@ export function ExecutionLog({ logs }) {
 
         <span
           style={{
-            fontSize:      9,
-            fontFamily:    MONO,
-            color:         C.textDim,
-            background:    C.bg,
-            border:        `1px solid ${C.border}`,
-            padding:       '2px 7px',
+            fontSize: 9,
+            fontFamily: MONO,
+            color: C.textDim,
+            background: C.bg,
+            border: `1px solid ${C.border}`,
+            padding: '2px 7px',
             letterSpacing: '0.06em',
           }}
         >
@@ -73,12 +73,12 @@ export function ExecutionLog({ logs }) {
       {/* ── Column headers ── */}
       <div
         style={{
-          display:        'flex',
-          alignItems:     'center',
-          padding:        '4px 16px',
-          background:     C.cardDeep,
-          borderBottom:   `1px solid ${C.border}`,
-          gap:            0,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '4px 16px',
+          background: C.cardDeep,
+          borderBottom: `1px solid ${C.border}`,
+          gap: 0,
         }}
       >
         <span style={{ width: 72, flexShrink: 0, fontSize: 8, fontFamily: MONO, color: C.textDim, letterSpacing: '0.10em', textTransform: 'uppercase' }}>
@@ -95,9 +95,9 @@ export function ExecutionLog({ logs }) {
       {/* ── Scrollable body ── */}
       <div
         style={{
-          maxHeight:      300,
-          overflowY:      'auto',
-          background:     C.bg,
+          maxHeight: 300,
+          overflowY: 'auto',
+          background: C.bg,
           scrollbarWidth: 'thin',
           scrollbarColor: `${C.border} transparent`,
         }}
@@ -105,31 +105,31 @@ export function ExecutionLog({ logs }) {
         {logs.length === 0 ? (
           <div
             style={{
-              textAlign:  'center',
-              color:      C.textDim,
-              fontSize:   11,
+              textAlign: 'center',
+              color: C.textDim,
+              fontSize: 11,
               fontFamily: MONO,
-              padding:    '28px 0',
+              padding: '28px 0',
             }}
           >
             ─ waiting for workflow to start ─
           </div>
         ) : (
           logs.map((entry, i) => {
-            const typeColor  = LOG_COLORS[entry.logType] ?? C.text;
-            const agentEmoji = AGENT_EMOJI[entry.agent]  ?? '◆';
-            const isEven     = i % 2 === 0;
+            const typeColor = LOG_COLORS[entry.logType] ?? C.text;
+            const agentEmoji = AGENT_EMOJI[entry.agent] ?? '◆';
+            const isEven = i % 2 === 0;
 
             return (
               <div
                 key={entry.id}
                 className="animate-fade-in"
                 style={{
-                  display:    'flex',
+                  display: 'flex',
                   alignItems: 'baseline',
-                  padding:    '3px 16px',
+                  padding: '3px 16px',
                   fontFamily: MONO,
-                  fontSize:   10,
+                  fontSize: 10,
                   lineHeight: 1.6,
                   background: isEven ? C.bg : `${C.cardDeep}99`,
                   borderBottom: `1px solid ${C.border}18`,
@@ -138,9 +138,9 @@ export function ExecutionLog({ logs }) {
                 {/* [HH:MM:SS] */}
                 <span
                   style={{
-                    width:      72,
+                    width: 72,
                     flexShrink: 0,
-                    color:      C.textDim,
+                    color: C.textDim,
                     letterSpacing: '0.02em',
                   }}
                 >
@@ -150,12 +150,12 @@ export function ExecutionLog({ logs }) {
                 {/* Agent emoji + name */}
                 <span
                   style={{
-                    width:      214,
+                    width: 214,
                     flexShrink: 0,
-                    color:      typeColor,
+                    color: typeColor,
                     fontWeight: 700,
                     paddingLeft: 6,
-                    overflow:   'hidden',
+                    overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                   }}
@@ -166,11 +166,11 @@ export function ExecutionLog({ logs }) {
                 {/* Message */}
                 <span
                   style={{
-                    flex:      1,
+                    flex: 1,
                     color: entry.logType === 'success' ? C.statusOk
-                         : entry.logType === 'error'   ? C.statusErr
-                         : entry.logType === 'warning' ? C.statusWarn
-                         :                               C.text,
+                      : entry.logType === 'error' ? C.statusErr
+                        : entry.logType === 'warning' ? C.statusWarn
+                          : C.text,
                     wordBreak: 'break-word',
                   }}
                 >

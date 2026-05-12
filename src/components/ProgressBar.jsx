@@ -12,7 +12,7 @@ export function ProgressBar({ pct, color, gradient, h = 5 }) {
   return (
     <div
       style={{
-        height:   h,
+        height: h,
         background: `${color}18`,
         position: 'relative',
         overflow: 'hidden',
@@ -21,21 +21,21 @@ export function ProgressBar({ pct, color, gradient, h = 5 }) {
     >
       <div
         style={{
-          height:     '100%',
-          width:      `${pct}%`,
+          height: '100%',
+          width: `${pct}%`,
           background: gradient ?? `linear-gradient(90deg,${color}77,${color})`,
           transition: 'width 500ms ease-out',
-          position:   'relative',
-          overflow:   'hidden',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
         {active && (
           <span
             style={{
-              position:   'absolute',
-              inset:      0,
+              position: 'absolute',
+              inset: 0,
               background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)',
-              animation:  'beam 1.6s linear infinite',
+              animation: 'beam 1.6s linear infinite',
             }}
           />
         )}
