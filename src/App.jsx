@@ -707,7 +707,8 @@ export default function App() {
         >
           MacroSynthAI · Agent Orchestration Platform · {new Date().getFullYear()}
         </div>
-      )}
-    </div>
+      </main>
+    )}
+  </div>
   );
 }
