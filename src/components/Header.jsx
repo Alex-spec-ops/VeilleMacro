@@ -6,13 +6,8 @@ import { C } from '../constants.js';
 /**
  * Header({ status, lastRun })
  *
- * status:  globalStatus — 'idle' | 'running' | 'success' | 'error'
- * lastRun: timestamp (ms) of the last completed run, or null
- *
- * Renders the sticky top bar with:
- * - Brand title + subtitle
- * - StatusBadge animated according to status
- * - Formatted "Last run" timestamp
+ * Minimal professional top bar — no gradients, no decorative elements.
+ * Single bottom border. Sans-serif branding.
  */
 export function Header({ status, lastRun }) {
   const lastRunLabel = timeAgo(lastRun);
@@ -20,14 +15,13 @@ export function Header({ status, lastRun }) {
   return (
     <header
       style={{
-        background:     'rgba(15,23,42,0.97)',
+        background:     C.card,
         borderBottom:   `1px solid ${C.border}`,
-        backdropFilter: 'blur(16px)',
         position:       'sticky',
         top:            0,
         zIndex:         50,
         padding:        '0 28px',
-        height:         60,
+        height:         48,
         display:        'flex',
         alignItems:     'center',
         justifyContent: 'space-between',
@@ -35,51 +29,52 @@ export function Header({ status, lastRun }) {
     >
       {/* ── Brand ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 22, lineHeight: 1 }}>🎯</span>
-        <div>
-          <div
-            style={{
-              fontSize:              16,
-              fontWeight:            800,
-              letterSpacing:         '-0.02em',
-              background:            'linear-gradient(90deg,#ec4899,#3b82f6)',
-              WebkitBackgroundClip:  'text',
-              WebkitTextFillColor:   'transparent',
-              backgroundClip:        'text',
-            }}
-          >
-            MacroSynthAI
-          </div>
-          <div
-            style={{
-              fontSize:      10,
-              color:         C.textDim,
-              letterSpacing: '0.06em',
-              marginTop:     1,
-            }}
-          >
-            AGENT ORCHESTRATION PLATFORM
-          </div>
-        </div>
-      </div>
-
-      {/* ── Right: badge + last run ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <StatusBadge status={status} size="md" />
-
-        <div
+        <span
           style={{
-            fontSize:   11,
-            color:      C.textDim,
-            textAlign:  'right',
-            lineHeight: 1.5,
+            fontSize:      14,
+            fontWeight:    800,
+            color:         C.text,
+            letterSpacing: '-0.02em',
           }}
         >
-          <div>Last run</div>
+          MacroSynthAI
+        </span>
+
+        <span style={{ color: C.blue, fontSize: 16, lineHeight: 1, userSelect: 'none' }}>·</span>
+
+        <span
+          style={{
+            fontSize:      11,
+            fontWeight:    500,
+            color:         C.textMuted,
+            letterSpacing: '0.01em',
+          }}
+        >
+          Agent Orchestration Platform
+        </span>
+      </div>
+
+      {/* ── Right: last run + status ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div
+          style={{
+            fontSize:   9,
+            fontFamily: "'SF Mono','Fira Code','Consolas',monospace",
+            color:      C.textDim,
+            textAlign:  'right',
+            lineHeight: 1.7,
+            letterSpacing: '0.05em',
+          }}
+        >
+          <div style={{ textTransform: 'uppercase' }}>Last run</div>
           <div style={{ color: lastRunLabel ? C.textMuted : C.textDim }}>
             {lastRunLabel ?? '—'}
           </div>
         </div>
+
+        <span style={{ width: 1, height: 16, background: C.border, display: 'inline-block' }} />
+
+        <StatusBadge status={status} size="md" />
       </div>
     </header>
   );

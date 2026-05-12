@@ -64,7 +64,7 @@ Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
   synthesis: {
     id: 'synthesis', name: 'comparative_synthesis_agent',
-    label: 'Analyse Comparative', emoji: '⚖️', color: C.violet,
+    label: 'Analyse Comparative', emoji: '⚖️', color: C.teal,
     simulatedDuration: 28_000,
     desc: 'Synthèse comparative croisée de qualité CIO : convergences ≥3 auteurs, divergences, nouvelles idées, risques agrégés.',
     logs: [
@@ -516,25 +516,27 @@ export default function App() {
     clearInterval(clockRef.current);
   }, [state.globalStatus]);
 
+  const MONO = "'SF Mono','Fira Code','Consolas',monospace";
+
   return (
     <div
       style={{
         minHeight:  '100vh',
         background: C.bg,
         color:      C.text,
-        fontFamily: "'SF Mono','Fira Code','Consolas',monospace",
+        fontFamily: "'Inter','Helvetica Neue',Arial,sans-serif",
       }}
     >
       <Header status={state.globalStatus} lastRun={state.lastRun} />
 
       <main
         style={{
-          maxWidth:      1100,
+          maxWidth:      1280,
           margin:        '0 auto',
-          padding:       '28px 24px',
+          padding:       '20px 28px',
           display:       'flex',
           flexDirection: 'column',
-          gap:           24,
+          gap:           16,
         }}
       >
         <OrchestratorCard
@@ -549,16 +551,46 @@ export default function App() {
           }}
         />
 
-        {/* 3-col grid: Collector, Synthesis, Dashboard */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
-          <AgentCard agent={state.agents.collector} config={AGENTS.collector} />
-          <AgentCard agent={state.agents.synthesis} config={AGENTS.synthesis} />
-          <AgentCard agent={state.agents.dashboard} config={AGENTS.dashboard} />
+        {/* ── Pipeline section header ── */}
+        <div
+          style={{
+            display:      'flex',
+            alignItems:   'center',
+            justifyContent: 'space-between',
+            paddingBottom: 6,
+            borderBottom: `1px solid ${C.border}`,
+          }}
+        >
+          <span
+            style={{
+              fontSize:      9,
+              fontFamily:    MONO,
+              fontWeight:    700,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color:         C.textDim,
+            }}
+          >
+            Pipeline — 4 Agents
+          </span>
+          <span
+            style={{
+              fontSize:      9,
+              fontFamily:    MONO,
+              color:         C.textDim,
+              letterSpacing: '0.06em',
+            }}
+          >
+            Collector → Synthesis → Dashboard ∥ PDF → Gmail
+          </span>
         </div>
 
-        {/* PDF — own row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
-          <AgentCard agent={state.agents.pdf} config={AGENTS.pdf} />
+        {/* ── Agent strips (stacked, no gap between them = seamless rows) ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <AgentCard agent={state.agents.collector} config={AGENTS.collector} index={1} />
+          <AgentCard agent={state.agents.synthesis} config={AGENTS.synthesis} index={2} />
+          <AgentCard agent={state.agents.dashboard} config={AGENTS.dashboard} index={3} />
+          <AgentCard agent={state.agents.pdf}       config={AGENTS.pdf}       index={4} />
         </div>
 
         <ExecutionLog logs={state.logs} />
@@ -567,8 +599,9 @@ export default function App() {
           style={{
             textAlign:     'center',
             color:         C.textDim,
-            fontSize:      10,
-            letterSpacing: '0.05em',
+            fontSize:      9,
+            fontFamily:    MONO,
+            letterSpacing: '0.06em',
             paddingBottom: 8,
           }}
         >

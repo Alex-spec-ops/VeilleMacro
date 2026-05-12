@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCcw, Loader2, CheckCircle2 } from 'lucide-react';
+import { RotateCcw, Loader2 } from 'lucide-react';
 import { StatusBadge } from './StatusBadge.jsx';
 import { ProgressBar } from './ProgressBar.jsx';
 import { C } from '../constants.js';
@@ -7,249 +7,241 @@ import { C } from '../constants.js';
 /**
  * OrchestratorCard({ status, progress, currentStep, onLaunch, onReset })
  *
- * status:      'idle' | 'running' | 'success' | 'error'
- * progress:    0–100 (drives the gradient progress bar)
- * currentStep: string describing the active step, or null
- * onLaunch:    () => void — starts the workflow
- * onReset:     () => void — resets state
+ * Professional command-panel — left accent border, no decorative gradients.
+ *
+ *  Zone 1 — identity row (icon · title · status badge)
+ *  Zone 2 — progress bar (running / done only)
+ *  Zone 3 — current step
+ *  Zone 4 — action buttons
  */
 export function OrchestratorCard({ status, progress, currentStep, onLaunch, onReset }) {
-  const isRunning  = status === 'running';
-  const isSuccess  = status === 'success';
+  const isRunning = status === 'running';
+  const isSuccess = status === 'success';
 
-  const borderColor = isRunning  ? `${C.pink}88`
-                    : isSuccess  ? `${C.statusOk}66`
-                    :              `${C.pink}33`;
+  const accentColor = isRunning ? C.blue
+                    : isSuccess ? C.statusOk
+                    :             C.border;
 
-  const glowColor   = isRunning  ? `${C.pink}40`
-                    : isSuccess  ? `${C.statusOk}30`
-                    :              'transparent';
+  const MONO = "'SF Mono','Fira Code','Consolas',monospace";
 
   return (
     <div
+      className={isRunning ? 'running-glow' : 'transition-card'}
       style={{
-        background:  C.card,
-        border:      `1.5px solid ${borderColor}`,
-        borderRadius: 20,
-        padding:     '28px 32px',
-        position:    'relative',
-        overflow:    'hidden',
-        boxShadow:   `0 0 48px -8px ${glowColor}`,
-        transition:  'box-shadow 0.5s ease, border-color 0.4s ease',
+        background:   C.card,
+        borderTop:    `1px solid ${C.border}`,
+        borderRight:  `1px solid ${C.border}`,
+        borderBottom: `1px solid ${C.border}`,
+        borderLeft:   `3px solid ${accentColor}`,
       }}
     >
-      {/* ── Background decorations ── */}
+
+      {/* ── Zone 1 : Identity ── */}
       <div
         style={{
-          position:        'absolute', inset: 0, opacity: 0.025, pointerEvents: 'none',
-          backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)',
-          backgroundSize:  '40px 40px',
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'space-between',
+          padding:        '14px 20px',
+          borderBottom:   `1px solid ${C.border}`,
         }}
-      />
-      <div
-        style={{
-          position: 'absolute', top: -60, right: -60,
-          width: 200, height: 200, borderRadius: '50%',
-          background:   `radial-gradient(circle,${C.pink}18 0%,transparent 70%)`,
-          pointerEvents: 'none',
-        }}
-      />
-
-      <div style={{ position: 'relative' }}>
-
-        {/* ── Identity row ── */}
-        <div
-          style={{
-            display:        'flex',
-            alignItems:     'flex-start',
-            justifyContent: 'space-between',
-            marginBottom:   20,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* Icon */}
-            <div style={{ position: 'relative' }}>
-              {isRunning && (
-                <span
-                  className="pulse-ring"
-                  style={{
-                    position:     'absolute', inset: -7,
-                    borderRadius: '50%',
-                    border:       `2px solid ${C.pink}`,
-                  }}
-                />
-              )}
-              <div
-                style={{
-                  width:          54,
-                  height:         54,
-                  borderRadius:   16,
-                  background:     `linear-gradient(135deg,${C.pink}22,${C.violet}22)`,
-                  border:         `1.5px solid ${isRunning ? C.pink + '66' : C.pink + '33'}`,
-                  display:        'flex',
-                  alignItems:     'center',
-                  justifyContent: 'center',
-                  fontSize:       26,
-                }}
-              >
-                {isRunning
-                  ? <Loader2 size={24} color={C.pink} className="spin" />
-                  : '🎯'}
-              </div>
-            </div>
-
-            {/* Title */}
-            <div>
-              <div
-                style={{
-                  fontSize:      10,
-                  color:         C.textMuted,
-                  letterSpacing: '0.09em',
-                  textTransform: 'uppercase',
-                  marginBottom:  4,
-                }}
-              >
-                Orchestrateur principal
-              </div>
-              <div
-                className={isRunning ? 'shimmer-text' : ''}
-                style={{
-                  fontSize:      19,
-                  fontWeight:    800,
-                  letterSpacing: '-0.01em',
-                  color:         isRunning ? undefined : isSuccess ? C.statusOk : C.text,
-                }}
-              >
-                🎯 Orchestrator
-              </div>
-              <div
-                style={{
-                  fontSize:    11,
-                  color:       C.textMuted,
-                  fontFamily:  'monospace',
-                  marginTop:   3,
-                }}
-              >
-                macro_synthesis_orchestrator
-              </div>
-            </div>
-          </div>
-
-          <StatusBadge status={status} size="md" />
-        </div>
-
-        {/* ── Progress bar (visible when running or done) ── */}
-        {(isRunning || isSuccess) && (
-          <div style={{ marginBottom: 14 }}>
-            <div
-              style={{
-                display:        'flex',
-                justifyContent: 'space-between',
-                marginBottom:   8,
-              }}
-            >
-              <span
-                style={{
-                  fontSize:   12,
-                  fontWeight: 600,
-                  color:      isRunning ? C.pink : C.statusOk,
-                }}
-              >
-                {progress.toFixed(1)}%
-              </span>
-              <span style={{ fontSize: 11, color: C.textMuted }}>
-                {isSuccess ? '~56.5s total' : '~56.5s estimé'}
-              </span>
-            </div>
-            <ProgressBar
-              pct={progress}
-              gradient="linear-gradient(90deg,#ec4899,#8b5cf6,#3b82f6)"
-              color={C.pink}
-              h={8}
-            />
-          </div>
-        )}
-
-        {/* ── Current step ── */}
-        <div
-          style={{
-            display:      'flex',
-            alignItems:   'center',
-            gap:          8,
-            background:   `${C.pink}0c`,
-            border:       `1px solid ${C.pink}22`,
-            borderRadius: 10,
-            padding:      '9px 14px',
-            marginBottom: 22,
-            fontSize:     12,
-            fontFamily:   'monospace',
-            color:        isRunning ? C.pink : isSuccess ? C.statusOk : C.textMuted,
-          }}
-        >
-          {isRunning
-            ? <Loader2 size={11} color={C.pink} className="spin" />
-            : isSuccess
-              ? <CheckCircle2 size={11} color={C.statusOk} />
-              : <span style={{ width: 10, height: 10, borderRadius: '50%', background: C.textDim, display: 'inline-block', flexShrink: 0 }} />
-          }
-          <span>
-            {currentStep ?? (isSuccess ? 'Workflow terminé avec succès ✓' : 'Prêt à démarrer le workflow…')}
-          </span>
-        </div>
-
-        {/* ── Action buttons ── */}
-        <div style={{ display: 'flex', gap: 10 }}>
-          {/* Launch */}
-          <button
-            className="btn-launch"
-            onClick={onLaunch}
-            disabled={isRunning}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* Square icon */}
+          <div
             style={{
-              flex:           1,
+              width:          38,
+              height:         38,
+              background:     `${C.blue}0d`,
+              border:         `1px solid ${isRunning ? C.blue + '44' : C.border}`,
               display:        'flex',
               alignItems:     'center',
               justifyContent: 'center',
-              gap:            8,
-              padding:        '11px 0',
-              borderRadius:   12,
-              border:         'none',
-              cursor:         isRunning ? 'not-allowed' : 'pointer',
-              background:     isRunning
-                ? `linear-gradient(135deg,${C.pink}44,${C.blue}44)`
-                : 'linear-gradient(135deg,#ec4899,#8b5cf6,#3b82f6)',
-              color:          '#fff',
-              fontSize:       14,
-              fontWeight:     700,
-              opacity:        isRunning ? 0.6 : 1,
-              boxShadow:      isRunning ? 'none' : '0 4px 20px -4px rgba(236,72,153,0.5)',
+              flexShrink:     0,
             }}
           >
             {isRunning
-              ? <><Loader2 size={15} className="spin" /> Running…</>
-              : <>🚀 Launch MacroSynthAI</>}
-          </button>
+              ? <Loader2 size={18} color={C.blue} className="spin" />
+              : <span style={{ fontSize: 20, lineHeight: 1 }}>🎯</span>
+            }
+          </div>
 
-          {/* Reset */}
-          <button
-            className="btn-reset"
-            onClick={onReset}
+          <div>
+            <div
+              style={{
+                fontSize:      8,
+                fontFamily:    MONO,
+                color:         C.textDim,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                marginBottom:  4,
+              }}
+            >
+              Orchestrateur principal
+            </div>
+            <div
+              style={{
+                fontSize:      15,
+                fontWeight:    700,
+                color:         isSuccess ? C.statusOk : C.text,
+                letterSpacing: '-0.01em',
+              }}
+            >
+              MacroSynthAI Orchestrator
+            </div>
+            <div
+              style={{
+                fontSize:      9,
+                fontFamily:    MONO,
+                color:         C.textDim,
+                marginTop:     3,
+                letterSpacing: '0.04em',
+              }}
+            >
+              macro_synthesis_orchestrator
+            </div>
+          </div>
+        </div>
+
+        <StatusBadge status={status} size="md" />
+      </div>
+
+      {/* ── Zone 2 : Progress (running / success only) ── */}
+      {(isRunning || isSuccess) && (
+        <div style={{ padding: '10px 20px', borderBottom: `1px solid ${C.border}` }}>
+          <div
             style={{
-              display:      'flex',
-              alignItems:   'center',
-              gap:          6,
-              padding:      '11px 18px',
-              borderRadius: 12,
-              background:   'transparent',
-              border:       `1px solid ${C.border}`,
-              cursor:       'pointer',
-              color:        C.textMuted,
-              fontSize:     13,
-              fontWeight:   600,
+              display:        'flex',
+              justifyContent: 'space-between',
+              alignItems:     'baseline',
+              marginBottom:   6,
             }}
           >
-            <RotateCcw size={13} /> Reset
-          </button>
+            <span
+              style={{
+                fontSize:   12,
+                fontFamily: MONO,
+                fontWeight: 700,
+                color:      isRunning ? C.blue : C.statusOk,
+              }}
+            >
+              {progress.toFixed(1)}%
+            </span>
+            <span
+              style={{
+                fontSize:   9,
+                fontFamily: MONO,
+                color:      C.textDim,
+                letterSpacing: '0.06em',
+              }}
+            >
+              ~75s estimé
+            </span>
+          </div>
+          <ProgressBar
+            pct={progress}
+            gradient={`linear-gradient(90deg,${C.blue},${C.teal})`}
+            color={C.blue}
+            h={4}
+          />
         </div>
+      )}
+
+      {/* ── Zone 3 : Current step ── */}
+      <div
+        style={{
+          display:    'flex',
+          alignItems: 'center',
+          gap:        10,
+          padding:    '9px 20px',
+          borderBottom: `1px solid ${C.border}`,
+          background: C.cardDeep,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: MONO,
+            fontSize:   11,
+            color:      isRunning ? C.blue : isSuccess ? C.statusOk : C.textDim,
+            flexShrink: 0,
+          }}
+        >
+          {isRunning ? '▶' : isSuccess ? '✓' : '○'}
+        </span>
+        <span
+          style={{
+            fontSize:   11,
+            fontFamily: MONO,
+            color:      isRunning ? C.text
+                      : isSuccess ? C.statusOk
+                      :             C.textDim,
+          }}
+        >
+          {currentStep ?? (isSuccess
+            ? 'Workflow terminé avec succès'
+            : 'Prêt à démarrer le workflow…'
+          )}
+        </span>
+      </div>
+
+      {/* ── Zone 4 : Buttons ── */}
+      <div style={{ display: 'flex', padding: '12px 20px' }}>
+
+        {/* Launch */}
+        <button
+          className="btn-launch"
+          onClick={onLaunch}
+          disabled={isRunning}
+          style={{
+            flex:           1,
+            display:        'flex',
+            alignItems:     'center',
+            justifyContent: 'center',
+            gap:            8,
+            padding:        '9px 0',
+            border:         'none',
+            cursor:         isRunning ? 'not-allowed' : 'pointer',
+            background:     isRunning ? `${C.blue}1a` : C.blue,
+            color:          '#fff',
+            fontSize:       12,
+            fontFamily:     MONO,
+            fontWeight:     700,
+            letterSpacing:  '0.06em',
+            textTransform:  'uppercase',
+            opacity:        isRunning ? 0.5 : 1,
+          }}
+        >
+          {isRunning
+            ? <><Loader2 size={12} className="spin" /> Running…</>
+            : <>▶ Launch MacroSynthAI</>
+          }
+        </button>
+
+        {/* Divider */}
+        <div style={{ width: 1, background: C.border, flexShrink: 0 }} />
+
+        {/* Reset */}
+        <button
+          className="btn-reset"
+          onClick={onReset}
+          style={{
+            display:      'flex',
+            alignItems:   'center',
+            gap:          6,
+            padding:      '9px 18px',
+            background:   'transparent',
+            border:       'none',
+            cursor:       'pointer',
+            color:        C.textMuted,
+            fontSize:     11,
+            fontFamily:   MONO,
+            fontWeight:   600,
+            letterSpacing:'0.06em',
+            textTransform:'uppercase',
+          }}
+        >
+          <RotateCcw size={11} /> Reset
+        </button>
 
       </div>
     </div>

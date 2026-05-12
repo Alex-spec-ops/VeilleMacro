@@ -5,47 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VeilleMacro — Agent Orchestrator</title>
     <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      body { background: #070b14; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
+      body {
+        background: #060e1a;
+        font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
       #root { min-height: 100vh; }
 
       @keyframes spin { to { transform: rotate(360deg); } }
-      @keyframes pulse-ring {
-        0%   { transform: scale(0.8); opacity: 1; }
-        100% { transform: scale(2.2); opacity: 0; }
-      }
-      @keyframes shimmer {
-        0%   { background-position: -200% center; }
-        100% { background-position:  200% center; }
-      }
-      @keyframes flow-dash {
-        to { stroke-dashoffset: -24; }
-      }
-      @keyframes slide-in-right {
-        from { opacity: 0; transform: translateX(20px); }
-        to   { opacity: 1; transform: translateX(0); }
-      }
       @keyframes fade-in {
         from { opacity: 0; transform: translateY(-4px); }
         to   { opacity: 1; transform: translateY(0); }
       }
-      @keyframes pulse-border {
-        0%, 100% {
-          border-color: rgba(59, 130, 246, 0.5);
-          box-shadow: 0 0 0 rgba(59, 130, 246, 0);
-        }
-        50% {
-          border-color: rgba(59, 130, 246, 1);
-          box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
-        }
-      }
       @keyframes animate-pulse-kf {
         0%, 100% { opacity: 1; }
         50%       { opacity: 0.5; }
-      }
-      @keyframes progress-glow {
-        0%, 100% { box-shadow: 0 0 6px 1px currentColor; }
-        50%       { box-shadow: 0 0 14px 3px currentColor; }
       }
       @keyframes beam {
         0%   { left: -60%; }
@@ -55,41 +30,38 @@
         0%, 100% { opacity: 1; }
         50%       { opacity: 0.3; }
       }
-
-      .spin            { animation: spin 1s linear infinite; }
-      .pulse-ring      { animation: pulse-ring 1.4s ease-out infinite; }
-      .shimmer-text {
-        background: linear-gradient(90deg, #818cf8 0%, #c084fc 30%, #f0abfc 50%, #c084fc 70%, #818cf8 100%);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: shimmer 3s linear infinite;
+      @keyframes pulse-border {
+        0%, 100% {
+          border-color: rgba(22, 104, 219, 0.4);
+          box-shadow: 0 0 0 rgba(22, 104, 219, 0);
+        }
+        50% {
+          border-color: rgba(22, 104, 219, 0.9);
+          box-shadow: 0 0 14px rgba(22, 104, 219, 0.25);
+        }
       }
-      .flow-path       { animation: flow-dash 0.6s linear infinite; }
-      .slide-in        { animation: slide-in-right 0.35s ease forwards; }
-      .fade-in         { animation: fade-in 0.35s ease forwards; }
-      .animate-fade-in { animation: fade-in 0.35s ease forwards; }
-      .running-glow    { animation: pulse-border 2s ease-in-out infinite; }
-      .animate-pulse   { animation: animate-pulse-kf 2s ease-in-out infinite; }
-      .progress-glow   { animation: progress-glow 1.2s ease-in-out infinite; }
-      .blink           { animation: blink 1.2s ease-in-out infinite; }
 
-      /* Card & progress transitions */
-      .transition-card     { transition: border-color 300ms ease, box-shadow 300ms ease, background 300ms ease; }
+      .spin          { animation: spin 1s linear infinite; }
+      .animate-fade-in { animation: fade-in 0.3s ease forwards; }
+      .animate-pulse { animation: animate-pulse-kf 2s ease-in-out infinite; }
+      .blink         { animation: blink 1.2s ease-in-out infinite; }
+      .running-glow  { animation: pulse-border 2s ease-in-out infinite; }
+
+      /* Transitions */
+      .transition-card     { transition: border-color 300ms ease, box-shadow 300ms ease; }
       .transition-progress { transition: width 500ms ease-out !important; }
 
-      /* Button hover/active — scale + transition */
+      /* Buttons */
       .btn-launch {
-        transition: transform 200ms ease, opacity 200ms ease, box-shadow 200ms ease;
+        transition: opacity 150ms ease, filter 120ms ease;
       }
-      .btn-launch:not(:disabled):hover  { transform: scale(1.025); }
-      .btn-launch:not(:disabled):active { transform: scale(0.98); }
+      .btn-launch:not(:disabled):hover  { filter: brightness(1.15); }
+      .btn-launch:not(:disabled):active { opacity: 0.82; }
       .btn-reset {
-        transition: transform 200ms ease, border-color 200ms ease, color 200ms ease;
+        transition: color 150ms ease, background 150ms ease;
       }
-      .btn-reset:hover  { transform: scale(1.025); border-color: #f1f5f9 !important; color: #f1f5f9 !important; }
-      .btn-reset:active { transform: scale(0.97); }
+      .btn-reset:hover  { color: #c5d4e8 !important; background: #0e2240 !important; }
+      .btn-reset:active { opacity: 0.75; }
     </style>
   </head>
   <body>
