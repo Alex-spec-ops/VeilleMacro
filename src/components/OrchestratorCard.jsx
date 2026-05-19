@@ -2,6 +2,7 @@ import React from 'react';
 import { RotateCcw, Loader2 } from 'lucide-react';
 import { StatusBadge } from './StatusBadge.jsx';
 import { C } from '../constants.js';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
 const MONO = "'Monaco','Courier New',monospace";
 
@@ -16,13 +17,14 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
   const isSuccess   = status === 'success';
   const isIdle      = status === 'idle';
   const launchReady = canLaunch && !isRunning;
+  const { isMobile } = useBreakpoint();
 
   return (
     <div
       style={{
         background:   `linear-gradient(135deg, ${C.blue} 0%, ${C.purple} 100%)`,
         borderRadius: 20,
-        padding:      '32px 36px',
+        padding:      isMobile ? '24px 20px' : '32px 36px',
         boxShadow:    '0 20px 40px rgba(102, 126, 234, 0.28)',
         position:     'relative',
         overflow:     'hidden',
@@ -221,12 +223,12 @@ export function OrchestratorCard({ status, progress, currentStep, onLaunch, onRe
         )}
 
         {/* ── Actions ── */}
-        <div style={{ display: 'flex', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 10 : 14 }}>
 
           {/* Launch */}
           <button
             className="btn-launch"
-            onClick={onLaunch}
+            onClick={isSuccess ? onViewResults : onLaunch}
             disabled={!launchReady}
             title={!canLaunch && !isRunning ? 'Sélectionnez une période d\'analyse pour démarrer' : undefined}
             style={{

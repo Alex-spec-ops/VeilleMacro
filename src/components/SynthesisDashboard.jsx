@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PdfReportModal } from './PdfReportModal.jsx';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
 /* ── Fallback data (used when Groq key absent or call failed) ─────── */
 const FALLBACK = {
@@ -230,7 +231,8 @@ function SectionTitle({ children }) {
 }
 
 /* ── Tab: Vue d'ensemble ──────────────────────────────────────────── */
-function OverviewTab({ data, period }) {
+function OverviewTab({ data, period, bp }) {
+  const { isMobile, isTablet } = bp;
   const startLabel = period?.start ? new Date(period.start).toLocaleDateString('fr-FR') : '—';
   const endLabel   = period?.end   ? new Date(period.end).toLocaleDateString('fr-FR')   : '—';
   const sentBg     = data.sentimentColor === 'red' ? '#FEF2F2' : data.sentimentColor === 'green' ? '#ECFDF5' : '#FFFBEB';
@@ -239,7 +241,7 @@ function OverviewTab({ data, period }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 10 : 16 }}>
         {[
           { label: 'Sentiment Global', value: data.sentiment, sub: `${startLabel} → ${endLabel}`, bg: sentBg, color: sentColor, big: true },
           { label: 'Sources Analysées', value: `${data.stats.sourcesAnalyzed}/22`, sub: 'Publications institutionnelles', bg: '#DBEAFE', color: '#1D4ED8' },
@@ -254,7 +256,7 @@ function OverviewTab({ data, period }) {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 14 : 24 }}>
         <Card>
           <SectionTitle>📋 Résumé Exécutif</SectionTitle>
           <p style={{ fontSize: 13, lineHeight: 1.8, color: '#374151', margin: 0 }}>{data.summary}</p>
@@ -291,7 +293,7 @@ function OverviewTab({ data, period }) {
 
       <Card>
         <SectionTitle>⚠️ Risques Principaux</SectionTitle>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 12 }}>
           {data.risks.map((r, i) => (
             <div key={i} style={{ background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: 10, padding: '14px 16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -311,7 +313,8 @@ function OverviewTab({ data, period }) {
 }
 
 /* ── Tab: Scores Consensus ────────────────────────────────────────── */
-function ScoresTab({ data }) {
+function ScoresTab({ data, bp }) {
+  const { isMobile } = bp;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <Card>
@@ -353,7 +356,7 @@ function ScoresTab({ data }) {
 
       <Card>
         <SectionTitle>🎯 Consensus par Classe d'Actif</SectionTitle>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 10 }}>
           {data.matrix.map((row, i) => (
             <div key={i} style={{ background: '#F9FAFB', borderRadius: 10, padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{row.theme}</span>
@@ -429,12 +432,13 @@ function ConvergencesTab({ data }) {
 /* ── Tab: Idées & CIO Matrix ──────────────────────────────────────── */
 const MATRIX_ANALYSTS = ['Timmer', 'Cembalest', 'Papic', 'Marks', 'Edwards', 'Asness', 'Saravelos', 'Summers', 'ElErian', 'Roubini', 'Buffett', 'Mauboussin', 'Trahan', 'Andurand'];
 
-function IdeasTab({ data }) {
+function IdeasTab({ data, bp }) {
+  const { isMobile } = bp;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       <div>
         <SectionTitle>💡 Idées d'Investissement Contre-Intuitives</SectionTitle>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
           {data.ideas.map((idea, i) => (
             <Card key={i} style={{ padding: 20 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
@@ -511,7 +515,8 @@ function IdeasTab({ data }) {
 }
 
 /* ── Tab: Risques & Catalyseurs ───────────────────────────────────── */
-function RisksTab({ data }) {
+function RisksTab({ data, bp }) {
+  const { isMobile } = bp;
   const catalysts = [
     { type: 'Positif', title: 'Pivot Fed surprise',        body: "Toute inflexion dovish non anticipée (baisse > 25bp) pourrait déclencher un rally violent sur les actifs risqués — particulièrement actions tech et crédit HY." },
     { type: 'Positif', title: 'Désescalade géopolitique',  body: "Un accord de cessez-le-feu Moyen-Orient ou réduction des tensions Chine/Taiwan réduirait la prime de risque et soutiendrait une revalorisation des actifs risqués." },
@@ -547,7 +552,7 @@ function RisksTab({ data }) {
 
       <div>
         <SectionTitle>🔮 Catalyseurs Potentiels</SectionTitle>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 14 }}>
           {catalysts.map((cat, i) => (
             <div key={i} style={{
               background: cat.type === 'Positif' ? '#F0FDF4' : '#FEF2F2',
@@ -692,6 +697,8 @@ const TABS = [
 export function SynthesisDashboard({ synthesisData, period, isHistorical, analysisError }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [showPdf, setShowPdf]     = useState(false);
+  const bp                        = useBreakpoint();
+  const { isMobile }              = bp;
 
   // Show error screen if a key failed and no data is available
   if (analysisError && !synthesisData) {
@@ -712,18 +719,24 @@ export function SynthesisDashboard({ synthesisData, period, isHistorical, analys
   return (
     <div style={{ background: '#F9FAFB', minHeight: '100vh', fontFamily: "'Inter', sans-serif", color: '#111827' }}>
       {/* ── Header ── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #E5E7EB', padding: '18px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100 }}>
+      <div style={{
+        background: '#fff', borderBottom: '1px solid #E5E7EB',
+        padding: isMobile ? '14px 16px' : '18px 32px',
+        display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center',
+        gap: isMobile ? 12 : 0,
+        position: 'sticky', top: 0, zIndex: 100,
+      }}>
         <div>
-          <h1 style={{ fontSize: 21, fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-            MacroSynthAI — <span style={{ color: '#6B7280', fontWeight: 500 }}>Note de Recherche CIO</span>
+          <h1 style={{ fontSize: isMobile ? 16 : 21, fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+            MacroSynthAI — <span style={{ color: '#6B7280', fontWeight: 500 }}>Note CIO</span>
           </h1>
-          <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
-            Période : <strong style={{ color: '#111827' }}>{startLabel} → {endLabel}</strong>
-            &nbsp;·&nbsp; {data.stats.sourcesAnalyzed} sources institutionnelles
-            &nbsp;·&nbsp; <span style={{ color: '#9CA3AF' }}>Usage interne — Confidentiel</span>
+          <div style={{ fontSize: 11, color: '#6B7280', marginTop: 4, flexWrap: 'wrap' }}>
+            <strong style={{ color: '#111827' }}>{startLabel} → {endLabel}</strong>
+            {!isMobile && <>&nbsp;·&nbsp; {data.stats.sourcesAnalyzed} sources</>}
             {synthesisData && (
-              <span style={{ marginLeft: 8, fontSize: 10, color: '#059669', fontWeight: 700, background: '#DCFCE7', padding: '1px 6px', borderRadius: 4 }}>
-                ✓ Analyse Groq
+              <span style={{ marginLeft: 6, fontSize: 10, color: '#059669', fontWeight: 700, background: '#DCFCE7', padding: '1px 6px', borderRadius: 4 }}>
+                ✓ Groq
               </span>
             )}
             {isHistorical && (
@@ -733,20 +746,19 @@ export function SynthesisDashboard({ synthesisData, period, isHistorical, analys
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <button
             onClick={() => setShowPdf(true)}
-            title={synthesisData ? 'Générer le rapport PDF avec données Groq' : 'Rapport PDF (clé Groq requise pour données live)'}
             style={{
               display: 'flex', alignItems: 'center', gap: 7,
-              padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+              padding: isMobile ? '7px 12px' : '8px 16px', borderRadius: 8, cursor: 'pointer',
               background: synthesisData ? '#1d4ed8' : '#f3f4f6',
               color:      synthesisData ? '#ffffff' : '#6b7280',
               border:     synthesisData ? 'none' : '1.5px solid #e5e7eb',
-              fontSize: 13, fontWeight: 700, transition: 'all 0.2s',
+              fontSize: isMobile ? 12 : 13, fontWeight: 700, transition: 'all 0.2s',
             }}
           >
-            📄 Rapport PDF
+            📄 {isMobile ? 'PDF' : 'Rapport PDF'}
             {!synthesisData && (
               <span style={{ fontSize: 9, fontWeight: 600, color: '#d97706', background: '#fef3c7', padding: '1px 5px', borderRadius: 3 }}>
                 Groq
@@ -754,9 +766,9 @@ export function SynthesisDashboard({ synthesisData, period, isHistorical, analys
             )}
           </button>
 
-          <div style={{ background: sentBg, padding: '8px 18px', borderRadius: 8, textAlign: 'right' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: sentColor, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sentiment Global</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: sentColor }}>{data.sentiment}</div>
+          <div style={{ background: sentBg, padding: isMobile ? '6px 12px' : '8px 18px', borderRadius: 8, textAlign: 'right' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: sentColor, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sentiment</div>
+            <div style={{ fontSize: isMobile ? 12 : 15, fontWeight: 800, color: sentColor }}>{data.sentiment}</div>
           </div>
         </div>
       </div>
@@ -771,15 +783,15 @@ export function SynthesisDashboard({ synthesisData, period, isHistorical, analys
       )}
 
       {/* ── Tab navigation ── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #E5E7EB', padding: '0 32px', display: 'flex', gap: 2, overflowX: 'auto' }}>
+      <div className="tabs-scroll" style={{ background: '#fff', borderBottom: '1px solid #E5E7EB', padding: isMobile ? '0 8px' : '0 32px', display: 'flex', gap: 2 }}>
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '14px 16px', border: 'none', background: 'none',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              padding: isMobile ? '12px 10px' : '14px 16px', border: 'none', background: 'none',
+              fontSize: isMobile ? 11 : 13, fontWeight: 600, cursor: 'pointer',
               color:       activeTab === tab.id ? '#111827' : '#6B7280',
               borderBottom: `2px solid ${activeTab === tab.id ? '#111827' : 'transparent'}`,
               whiteSpace:  'nowrap', transition: 'color 0.15s',
@@ -791,12 +803,12 @@ export function SynthesisDashboard({ synthesisData, period, isHistorical, analys
       </div>
 
       {/* ── Content ── */}
-      <div style={{ padding: '32px' }}>
-        {activeTab === 'overview' && <OverviewTab data={data} period={period} />}
-        {activeTab === 'scores'   && <ScoresTab   data={data} />}
+      <div style={{ padding: isMobile ? '16px' : '32px' }}>
+        {activeTab === 'overview' && <OverviewTab data={data} period={period} bp={bp} />}
+        {activeTab === 'scores'   && <ScoresTab   data={data} bp={bp} />}
         {activeTab === 'matrix'   && <ConvergencesTab data={data} />}
-        {activeTab === 'ideas'    && <IdeasTab    data={data} />}
-        {activeTab === 'risks'    && <RisksTab    data={data} />}
+        {activeTab === 'ideas'    && <IdeasTab    data={data} bp={bp} />}
+        {activeTab === 'risks'    && <RisksTab    data={data} bp={bp} />}
         {activeTab === 'analysts' && <AnalystsTab data={data} />}
       </div>
     </div>

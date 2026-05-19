@@ -16,6 +16,7 @@ import { callGemini }                                 from './gemini.js';
 import { callGroq, callGroqJSON }                     from './groq.js';
 import { searchAllAnalysts }                           from './tavily.js';
 import { loadHistory, saveAnalysis, deleteAnalysis, clearHistory } from './history.js';
+import { useBreakpoint } from './hooks/useBreakpoint.js';
 
 /* ─────────────────────────────────────────────
    AGENT DEFINITIONS  (metadata, no state)
@@ -700,6 +701,7 @@ export default function App() {
   const [view, setView]         = useState('orchestrator'); // 'orchestrator' | 'dashboard' | 'history'
   const [historyList, setHistoryList] = useState(() => loadHistory());
   const [viewedEntry, setViewedEntry] = useState(null); // history entry loaded in dashboard
+  const { isMobile, isTablet }  = useBreakpoint();
 
   const signalRef = useRef({ cancelled: false });
   const clockRef  = useRef(null);
@@ -713,18 +715,19 @@ export default function App() {
     clearInterval(clockRef.current);
   }, []);
 
-  /* ── Save to history when workflow completes ── */
+  /* ── Save to history when workflow completes (only if real Groq data) ── */
   useEffect(() => {
     if (state.globalStatus !== 'success') return;
     const data = state.synthesisData;
+    if (!data) return; // don't save failed/partial runs without real synthesis data
     const entry = {
       id:             Date.now().toString(),
       timestamp:      Date.now(),
       period:         dateRange,
       synthesisData:  data,
-      sentiment:      data?.sentiment      ?? 'RISK-OFF STRUCTUREL',
-      sentimentColor: data?.sentimentColor ?? 'red',
-      stats:          data?.stats          ?? { sourcesAnalyzed: 14, convergences: 5, divergences: 3, newIdeas: 4, risks: 4 },
+      sentiment:      data.sentiment,
+      sentimentColor: data.sentimentColor,
+      stats:          data.stats,
     };
     saveAnalysis(entry);
     setHistoryList(loadHistory());
@@ -738,13 +741,17 @@ export default function App() {
 
     const signal = { cancelled: false };
     signalRef.current = signal;
-    clockRef.current  = setInterval(() => {}, 100);
 
     setViewedEntry(null);
     dispatch({ type: 'START_WORKFLOW' });
-    await runWorkflow(dispatch, signal, dateRange);
 
-    clearInterval(clockRef.current);
+    try {
+      await runWorkflow(dispatch, signal, dateRange);
+    } catch (e) {
+      if (!e.cancelled) {
+        dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'groq', message: e.message ?? 'Erreur inattendue du pipeline.' });
+      }
+    }
   }, [state.globalStatus, dateRange, dateRangeValid]);
 
   /* ── History actions ────────────────────── */
@@ -789,8 +796,8 @@ export default function App() {
 
       {/* ── View Switcher ── */}
       <div style={{
-        display: 'flex', justifyContent: 'center', gap: 10,
-        padding: '20px 32px 0', margin: '0 auto', maxWidth: 1440,
+        display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap',
+        padding: isMobile ? '12px 16px 0' : '20px 32px 0', margin: '0 auto', maxWidth: 1440,
       }}>
         <button onClick={() => { setView('orchestrator'); setViewedEntry(null); }} style={btnStyle(view === 'orchestrator' && !viewedEntry, C.blue)}>
           🔧 Orchestrateur
@@ -835,8 +842,9 @@ export default function App() {
         />
       ) : (
         <main style={{
-          maxWidth: 1440, margin: '0 auto', padding: '28px 32px',
-          display: 'flex', flexDirection: 'column', gap: 24,
+          maxWidth: 1440, margin: '0 auto',
+          padding: isMobile ? '16px' : isTablet ? '20px 24px' : '28px 32px',
+          display: 'flex', flexDirection: 'column', gap: isMobile ? 16 : 24,
         }}>
           <StatsBar isActive={hasRun} />
 
@@ -865,7 +873,11 @@ export default function App() {
 
           <PipelineChart agents={state.agents} />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+            gap: isMobile ? 12 : 24,
+          }}>
             <AgentCard agent={state.agents.collector} config={AGENTS.collector} />
             <AgentCard agent={state.agents.synthesis} config={AGENTS.synthesis} />
             <AgentCard agent={state.agents.dashboard} config={AGENTS.dashboard} />

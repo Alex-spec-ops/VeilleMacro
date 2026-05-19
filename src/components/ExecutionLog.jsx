@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { C, LOG_COLORS, AGENT_EMOJI } from '../constants.js';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
 const MONO = "'Monaco','Courier New',monospace";
 
@@ -11,7 +12,8 @@ const MONO = "'Monaco','Courier New',monospace";
  * Monospace entries with colored log types.
  */
 export function ExecutionLog({ logs }) {
-  const bottomRef = useRef(null);
+  const bottomRef    = useRef(null);
+  const { isMobile } = useBreakpoint();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -137,7 +139,7 @@ export function ExecutionLog({ logs }) {
                 {/* Timestamp */}
                 <span
                   style={{
-                    minWidth:   75,
+                    minWidth:   isMobile ? 58 : 75,
                     color:      '#555555',
                     fontWeight: 600,
                     flexShrink: 0,
@@ -147,18 +149,20 @@ export function ExecutionLog({ logs }) {
                   {formatTs(entry.timestamp)}
                 </span>
 
-                {/* Agent */}
-                <span
-                  style={{
-                    minWidth:   165,
-                    color:      C.blue,
-                    fontWeight: 700,
-                    flexShrink: 0,
-                    fontSize:   11,
-                  }}
-                >
-                  {agentEmoji} [{entry.agent}]
-                </span>
+                {/* Agent — hidden on mobile */}
+                {!isMobile && (
+                  <span
+                    style={{
+                      minWidth:   165,
+                      color:      C.blue,
+                      fontWeight: 700,
+                      flexShrink: 0,
+                      fontSize:   11,
+                    }}
+                  >
+                    {agentEmoji} [{entry.agent}]
+                  </span>
+                )}
 
                 {/* Message */}
                 <span

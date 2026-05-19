@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
 /* ── Analyst keys in matrix order ───────────────────────────────────── */
 const ANALYST_KEYS = [
@@ -399,7 +400,8 @@ function ReportContent({ data, period, isGroqData }) {
 
 /* ── Main modal component ────────────────────────────────────────────── */
 export function PdfReportModal({ data, period, isGroqData, onClose }) {
-  const reportRef = useRef(null);
+  const reportRef    = useRef(null);
+  const { isMobile } = useBreakpoint();
 
   function handleDownloadPdf() {
     if (!reportRef.current) return;
@@ -439,28 +441,30 @@ export function PdfReportModal({ data, period, isGroqData, onClose }) {
       {/* Toolbar */}
       <div style={{
         background: '#1e293b', color: '#f8fafc',
-        padding: '12px 24px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: isMobile ? '12px 14px' : '12px 24px',
+        display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        justifyContent: 'space-between', gap: isMobile ? 10 : 0,
         flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span style={{ fontSize: 15, fontWeight: 700 }}>📄 Aperçu PDF — MacroSynthAI</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700 }}>📄 Aperçu PDF</span>
           <span style={{
             fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 4,
             background: isGroqData ? '#065f46' : '#92400e',
             color: isGroqData ? '#d1fae5' : '#fef3c7',
           }}>
-            {isGroqData ? '✓ Données Groq' : '⚠ Données simulation (clé Groq requise)'}
+            {isGroqData ? '✓ Groq' : '⚠ Simulation'}
           </span>
-          <span style={{ fontSize: 10, color: '#94a3b8' }}>3 pages A4 · Tableaux + Graphiques</span>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 8, width: isMobile ? '100%' : 'auto' }}>
           <button
             onClick={handleDownloadPdf}
             style={{
               background: '#1d4ed8', color: '#fff', border: 'none',
-              padding: '9px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+              padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              flex: isMobile ? 1 : 'none',
             }}
           >
             ⬇ Télécharger PDF
@@ -469,11 +473,11 @@ export function PdfReportModal({ data, period, isGroqData, onClose }) {
             onClick={onClose}
             style={{
               background: '#334155', color: '#f8fafc', border: 'none',
-              padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+              padding: '9px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
               cursor: 'pointer',
             }}
           >
-            ✕ Fermer
+            ✕
           </button>
         </div>
       </div>

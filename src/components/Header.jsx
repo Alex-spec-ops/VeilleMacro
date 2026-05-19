@@ -2,6 +2,7 @@ import React from 'react';
 import { StatusBadge } from './StatusBadge.jsx';
 import { timeAgo } from '../utils.js';
 import { C } from '../constants.js';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
 /**
  * Header({ status, lastRun })
@@ -9,7 +10,8 @@ import { C } from '../constants.js';
  * White top bar — logo square, gradient brand name, status on right.
  */
 export function Header({ status, lastRun }) {
-  const lastRunLabel = timeAgo(lastRun);
+  const lastRunLabel    = timeAgo(lastRun);
+  const { isMobile }   = useBreakpoint();
 
   return (
     <header
@@ -20,7 +22,7 @@ export function Header({ status, lastRun }) {
         position:       'sticky',
         top:            0,
         zIndex:         50,
-        padding:        '0 32px',
+        padding:        isMobile ? '0 16px' : '0 32px',
         height:         64,
         display:        'flex',
         alignItems:     'center',
@@ -28,19 +30,18 @@ export function Header({ status, lastRun }) {
       }}
     >
       {/* ── Brand ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        {/* Logo square */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div
           style={{
-            width:          40,
-            height:         40,
+            width:          isMobile ? 34 : 40,
+            height:         isMobile ? 34 : 40,
             background:     `linear-gradient(135deg, ${C.coral} 0%, ${C.orange} 100%)`,
             borderRadius:   11,
             display:        'flex',
             alignItems:     'center',
             justifyContent: 'center',
             fontWeight:     800,
-            fontSize:       14,
+            fontSize:       isMobile ? 12 : 14,
             color:          '#ffffff',
             letterSpacing:  '-0.02em',
             flexShrink:     0,
@@ -53,7 +54,7 @@ export function Header({ status, lastRun }) {
         <div>
           <div
             style={{
-              fontSize:             16,
+              fontSize:             isMobile ? 14 : 16,
               fontWeight:           800,
               background:           `linear-gradient(135deg, ${C.coral} 0%, ${C.teal} 100%)`,
               WebkitBackgroundClip: 'text',
@@ -65,34 +66,24 @@ export function Header({ status, lastRun }) {
           >
             MacroSynthAI
           </div>
-          <div
-            style={{
-              fontSize:   11,
-              color:      '#555555',
-              marginTop:  2,
-              fontWeight: 500,
-            }}
-          >
-            Agent Orchestration Platform
-          </div>
+          {!isMobile && (
+            <div style={{ fontSize: 11, color: '#555555', marginTop: 2, fontWeight: 500 }}>
+              Agent Orchestration Platform
+            </div>
+          )}
         </div>
       </div>
 
       {/* ── Right: last run + status ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 11, color: '#555555', lineHeight: 1.5 }}>Last run</div>
-          <div
-            style={{
-              fontSize:   12,
-              fontWeight: 600,
-              color:      lastRunLabel ? '#333333' : '#666666',
-            }}
-          >
-            {lastRunLabel ?? '—'}
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 18 }}>
+        {!isMobile && (
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 11, color: '#555555', lineHeight: 1.5 }}>Last run</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: lastRunLabel ? '#333333' : '#666666' }}>
+              {lastRunLabel ?? '—'}
+            </div>
           </div>
-        </div>
-
+        )}
         <StatusBadge status={status} size="md" />
       </div>
     </header>

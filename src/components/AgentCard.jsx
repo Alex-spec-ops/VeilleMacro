@@ -53,7 +53,7 @@ export function AgentCard({ agent, config }) {
           fontFamily: MONO,
         }}
       >
-        ✓ Completed in {fmtS(simulatedDuration)}
+        ✓ Completed in {fmtS(duration)}
       </span>
     );
   } else {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { C } from '../constants.js';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
 const STATS = [
   {
@@ -43,12 +44,13 @@ const STATS = [
  * isActive=true shows real numbers (after at least one run).
  */
 export function StatsBar({ isActive }) {
+  const { isMobile } = useBreakpoint();
   return (
     <div
       style={{
         display:             'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap:                 20,
+        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+        gap:                 isMobile ? 12 : 20,
       }}
     >
       {STATS.map((s, i) => (

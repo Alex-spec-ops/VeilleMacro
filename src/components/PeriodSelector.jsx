@@ -1,5 +1,6 @@
 import React from 'react';
 import { C } from '../constants.js';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
 /* ── Quick presets ── */
 const PRESETS = [
@@ -40,6 +41,7 @@ function fmtLabel(date) {
  * onChange({ start: Date|null, end: Date|null })
  */
 export function PeriodSelector({ startDate, endDate, onChange, disabled }) {
+  const { isMobile } = useBreakpoint();
 
   const setPreset = (days) => {
     const end   = new Date(); end.setHours(0, 0, 0, 0);
@@ -64,21 +66,29 @@ export function PeriodSelector({ startDate, endDate, onChange, disabled }) {
   }
 
   const inputStyle = (hasValue) => ({
-    padding:       '10px 14px',
-    background:    '#F9FAFB',
-    border:        `2px solid ${hasValue ? C.blue + '55' : C.border}`,
-    borderRadius:  10,
-    fontSize:      13,
-    fontWeight:    600,
-    color:         hasValue ? C.text : '#555555',
-    cursor:        disabled ? 'not-allowed' : 'pointer',
-    outline:       'none',
-    opacity:       disabled ? 0.55 : 1,
-    fontFamily:    "'Inter','Helvetica Neue',sans-serif",
-    minWidth:      148,
-    transition:    'border-color 200ms ease',
-    display:       'block',
+    padding:      '10px 14px',
+    background:   '#F9FAFB',
+    border:       `2px solid ${hasValue ? C.blue + '55' : C.border}`,
+    borderRadius: 10,
+    fontSize:     13,
+    fontWeight:   600,
+    color:        hasValue ? C.text : '#555555',
+    cursor:       disabled ? 'not-allowed' : 'pointer',
+    outline:      'none',
+    opacity:      disabled ? 0.55 : 1,
+    fontFamily:   "'Inter','Helvetica Neue',sans-serif",
+    width:        '100%',
+    transition:   'border-color 200ms ease',
+    display:      'block',
   });
+
+  const labelStyle = {
+    fontSize:      10,
+    fontWeight:    700,
+    letterSpacing: '0.09em',
+    textTransform: 'uppercase',
+    color:         '#555555',
+  };
 
   return (
     <div
@@ -86,50 +96,34 @@ export function PeriodSelector({ startDate, endDate, onChange, disabled }) {
         background:   '#ffffff',
         borderRadius: 16,
         border:       `2px solid ${isValid ? C.blue + '44' : C.border}`,
-        boxShadow:    isValid
-          ? `0 4px 20px rgba(102,126,234,0.12)`
-          : '0 1px 3px rgba(0,0,0,0.05)',
-        padding:      '22px 28px',
+        boxShadow:    isValid ? '0 4px 20px rgba(102,126,234,0.12)' : '0 1px 3px rgba(0,0,0,0.05)',
+        padding:      isMobile ? '18px 16px' : '22px 28px',
         position:     'relative',
         overflow:     'hidden',
         transition:   'border-color 300ms ease, box-shadow 300ms ease',
       }}
     >
       {/* Top gradient accent */}
-      <div
-        style={{
-          position:     'absolute',
-          top: 0, left: 0, right: 0,
-          height:       4,
-          background:   `linear-gradient(90deg, ${C.blue}, ${C.purple})`,
-          borderRadius: 0,
-        }}
-      />
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+        background: `linear-gradient(90deg, ${C.blue}, ${C.purple})`,
+      }} />
 
-      <div
-        style={{
-          display:        'flex',
-          alignItems:     'center',
-          gap:            24,
-          flexWrap:       'wrap',
-        }}
-      >
+      {/* ── Outer layout: column on mobile, row on desktop ── */}
+      <div style={{
+        display:        'flex',
+        flexDirection:  isMobile ? 'column' : 'row',
+        alignItems:     isMobile ? 'stretch' : 'center',
+        gap:            isMobile ? 16 : 24,
+      }}>
 
-        {/* ── Left: icon + title ── */}
+        {/* ── Icon + title ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <div
-            style={{
-              width:          44,
-              height:         44,
-              background:     '#EEF2FF',
-              borderRadius:   11,
-              display:        'flex',
-              alignItems:     'center',
-              justifyContent: 'center',
-              fontSize:       20,
-              flexShrink:     0,
-            }}
-          >
+          <div style={{
+            width: 44, height: 44, background: '#EEF2FF', borderRadius: 11,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, flexShrink: 0,
+          }}>
             📅
           </div>
           <div>
@@ -148,29 +142,13 @@ export function PeriodSelector({ startDate, endDate, onChange, disabled }) {
           </div>
         </div>
 
-        {/* ── Center: date inputs ── */}
-        <div
-          style={{
-            display:     'flex',
-            alignItems:  'flex-end',
-            gap:         10,
-            flex:        1,
-            minWidth:    340,
-          }}
-        >
-          {/* Start date */}
+        {/* ── Date inputs ── */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', gap: 10,
+          flex: 1,
+        }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1 }}>
-            <label
-              style={{
-                fontSize:      10,
-                fontWeight:    700,
-                letterSpacing: '0.09em',
-                textTransform: 'uppercase',
-                color:         '#555555',
-              }}
-            >
-              Date de début
-            </label>
+            <label style={labelStyle}>Date de début</label>
             <input
               type="date"
               value={toInputVal(startDate)}
@@ -181,32 +159,12 @@ export function PeriodSelector({ startDate, endDate, onChange, disabled }) {
             />
           </div>
 
-          {/* Arrow between inputs */}
-          <div
-            style={{
-              paddingBottom: 10,
-              color:         '#555555',
-              fontSize:      20,
-              lineHeight:    1,
-              flexShrink:    0,
-            }}
-          >
+          <div style={{ paddingBottom: 10, color: '#555555', fontSize: 20, lineHeight: 1, flexShrink: 0 }}>
             →
           </div>
 
-          {/* End date */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1 }}>
-            <label
-              style={{
-                fontSize:      10,
-                fontWeight:    700,
-                letterSpacing: '0.09em',
-                textTransform: 'uppercase',
-                color:         '#555555',
-              }}
-            >
-              Date de fin
-            </label>
+            <label style={labelStyle}>Date de fin</label>
             <input
               type="date"
               value={toInputVal(endDate)}
@@ -218,27 +176,15 @@ export function PeriodSelector({ startDate, endDate, onChange, disabled }) {
           </div>
         </div>
 
-        {/* ── Right: preset shortcuts ── */}
+        {/* ── Preset shortcuts ── */}
         <div style={{ flexShrink: 0 }}>
-          <div
-            style={{
-              fontSize:      10,
-              fontWeight:    700,
-              letterSpacing: '0.09em',
-              textTransform: 'uppercase',
-              color:         '#555555',
-              marginBottom:  7,
-            }}
-          >
-            Raccourcis
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ ...labelStyle, marginBottom: 7 }}>Raccourcis</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {PRESETS.map(p => (
               <button
                 key={p.label}
                 onClick={() => setPreset(p.days)}
                 disabled={disabled}
-                className="preset-btn"
                 style={{
                   padding:      '7px 11px',
                   background:   '#F3F4F6',
@@ -263,14 +209,7 @@ export function PeriodSelector({ startDate, endDate, onChange, disabled }) {
 
       {/* ── Validation error ── */}
       {isInvalid && (
-        <div
-          style={{
-            marginTop:  12,
-            fontSize:   12,
-            color:      C.coral,
-            fontWeight: 600,
-          }}
-        >
+        <div style={{ marginTop: 12, fontSize: 12, color: C.coral, fontWeight: 600 }}>
           ⚠ La date de fin doit être postérieure à la date de début.
         </div>
       )}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useBreakpoint } from '../hooks/useBreakpoint.js';
 
 const sentStyle = (color) => ({
   bg:    color === 'red' ? '#FEF2F2' : color === 'green' ? '#DCFCE7' : '#FEF3C7',
@@ -25,6 +26,7 @@ function StatChip({ label, value, color }) {
 }
 
 function HistoryCard({ entry, onLoad, onDelete }) {
+  const { isMobile } = useBreakpoint();
   const ts = new Date(entry.timestamp);
   const dateStr = ts.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
   const timeStr = ts.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -39,10 +41,11 @@ function HistoryCard({ entry, onLoad, onDelete }) {
       background: '#fff',
       borderRadius: 14,
       border: '1px solid #E5E7EB',
-      padding: '20px 24px',
+      padding: isMobile ? '16px' : '20px 24px',
       display: 'flex',
-      alignItems: 'center',
-      gap: 24,
+      flexDirection: isMobile ? 'column' : 'row',
+      alignItems: isMobile ? 'flex-start' : 'center',
+      gap: isMobile ? 12 : 24,
       transition: 'box-shadow 0.2s',
     }}
       onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'}
@@ -59,8 +62,10 @@ function HistoryCard({ entry, onLoad, onDelete }) {
         <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>{timeStr}</div>
       </div>
 
-      {/* Divider */}
-      <div style={{ width: 1, height: 56, background: '#E5E7EB', flexShrink: 0 }} />
+      {/* Divider — hidden on mobile (column layout) */}
+      {!isMobile && (
+        <div style={{ width: 1, height: 56, background: '#E5E7EB', flexShrink: 0 }} />
+      )}
 
       {/* Center: main info */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -92,7 +97,7 @@ function HistoryCard({ entry, onLoad, onDelete }) {
       </div>
 
       {/* Right: actions */}
-      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 8, flexShrink: 0, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-end' : 'flex-start' }}>
         <button
           onClick={() => onDelete(entry.id)}
           title="Supprimer cette analyse"
