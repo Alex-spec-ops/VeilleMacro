@@ -614,6 +614,71 @@ function AnalystsTab({ data }) {
   );
 }
 
+/* ── Error screen ────────────────────────────────────────────────── */
+function AnalysisErrorScreen({ error }) {
+  const sourceLabel = error.source === 'groq'
+    ? 'Groq API — Génération de la synthèse'
+    : 'Tavily Search API — Collecte des publications';
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '65vh', padding: '40px 24px',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 16, maxWidth: 480, width: '100%',
+        textAlign: 'center', padding: '52px 48px',
+        border: '1px solid #fca5a5', borderTop: '4px solid #dc2626',
+        boxShadow: '0 8px 32px rgba(220,38,38,0.08)',
+      }}>
+        <div style={{ fontSize: 44, marginBottom: 20 }}>⚠️</div>
+
+        <h2 style={{
+          fontSize: 22, fontWeight: 800, color: '#111827',
+          margin: '0 0 12px', letterSpacing: '-0.02em',
+        }}>
+          Erreur d'analyse
+        </h2>
+
+        <p style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.75, margin: '0 0 28px' }}>
+          Le pipeline MacroSynthAI a rencontré une erreur et ne peut pas générer le rapport.
+          Les données ne sont pas disponibles.
+        </p>
+
+        <div style={{
+          background: '#fef2f2', borderRadius: 8, padding: '14px 16px',
+          marginBottom: 32, textAlign: 'left',
+        }}>
+          <div style={{
+            fontSize: 9, fontWeight: 700, color: '#991b1b',
+            textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6,
+          }}>
+            Détail technique
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#dc2626', marginBottom: 4 }}>
+            {sourceLabel}
+          </div>
+          <div style={{
+            fontSize: 11, color: '#7f1d1d', fontFamily: "'Monaco','Courier New',monospace",
+            wordBreak: 'break-all', lineHeight: 1.6,
+          }}>
+            {error.message}
+          </div>
+        </div>
+
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          background: '#1d4ed8', color: '#fff',
+          padding: '12px 26px', borderRadius: 10,
+          fontSize: 13, fontWeight: 700,
+        }}>
+          📧 Contacter le développeur
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main component ───────────────────────────────────────────────── */
 const TABS = [
   { id: 'overview',  label: "Vue d'ensemble",             icon: '📋' },
@@ -624,9 +689,19 @@ const TABS = [
   { id: 'analysts',  label: 'Tableau Analystes (14)',     icon: '👥' },
 ];
 
-export function SynthesisDashboard({ synthesisData, period, isHistorical }) {
+export function SynthesisDashboard({ synthesisData, period, isHistorical, analysisError }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [showPdf, setShowPdf]     = useState(false);
+
+  // Show error screen if a key failed and no data is available
+  if (analysisError && !synthesisData) {
+    return (
+      <div style={{ background: '#F9FAFB', minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
+        <AnalysisErrorScreen error={analysisError} />
+      </div>
+    );
+  }
+
   const data = synthesisData || FALLBACK;
 
   const startLabel = period?.start ? new Date(period.start).toLocaleDateString('fr-FR') : '—';

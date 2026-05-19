@@ -14,6 +14,7 @@ import { C }                                          from './constants.js';
 import { inferLogType, sleep }                        from './utils.js';
 import { callGemini }                                 from './gemini.js';
 import { callGroq, callGroqJSON }                     from './groq.js';
+import { searchAllAnalysts }                           from './tavily.js';
 import { loadHistory, saveAnalysis, deleteAnalysis, clearHistory } from './history.js';
 
 /* ─────────────────────────────────────────────
@@ -251,11 +252,12 @@ const ORDER = ['collector', 'synthesis', 'dashboard', 'pdf'];
    STATE & REDUCER
 ───────────────────────────────────────────── */
 const initialState = {
-  globalStatus:  'idle',   // idle | running | success | error
-  lastRun:       null,
-  progress:      0,
-  currentStep:   null,
-  synthesisData: null,
+  globalStatus:   'idle',   // idle | running | success | error
+  lastRun:        null,
+  progress:       0,
+  currentStep:    null,
+  synthesisData:  null,
+  analysisError:  null,     // { source: 'tavily' | 'groq', message: string } | null
   agents: {
     collector: { status: 'idle', duration: 0 },
     synthesis: { status: 'idle', duration: 0 },
@@ -300,6 +302,9 @@ function reducer(state, action) {
 
     case 'SET_SYNTHESIS_DATA':
       return { ...state, synthesisData: action.data };
+
+    case 'SET_ANALYSIS_ERROR':
+      return { ...state, analysisError: { source: action.source, message: action.message } };
 
     case 'COMPLETE_WORKFLOW':
       return { ...state, globalStatus: 'success', progress: 100, lastRun: Date.now(), currentStep: null };
@@ -390,15 +395,52 @@ async function runAgent(agentId, dispatch, signal, period) {
     dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'running', duration: Date.now() - t0 });
   }, 100);
 
+  const tavilyKey = import.meta.env.VITE_TAVILY_API_KEY;
   const groqKey   = import.meta.env.VITE_GROQ_API_KEY;
   const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
+  // Tavily: real web search for collector agent only
+  const useTavily = tavilyKey && agentId === 'collector';
   // Agents synthesis & dashboard prefer Groq; all others prefer Gemini
   const useGroq   = groqKey && def.geminiPrompt && (agentId === 'synthesis' || agentId === 'dashboard');
   const useGemini = geminiKey && def.geminiPrompt && !useGroq;
 
+  let searchResults = null;
+
   try {
-    if (useGroq) {
+    if (useTavily) {
+      // ── Mode ⓪ : Tavily real web search (collector) ───────────
+      log('🌐 Tavily Search API — recherche web réelle sur 22 analystes macro…', 'info');
+
+      try {
+        searchResults = await searchAllAnalysts(period, signal, (result) => {
+          const { analyst, results, status, error } = result;
+          if (status === 'found') {
+            const best   = results[0];
+            let   domain = '';
+            try { domain = new URL(best.url).hostname.replace('www.', ''); } catch {}
+            log(`✅ [${analyst.id}/22] ${analyst.name} — "${best.title.slice(0, 55)}…" · ${domain}`, 'success');
+          } else if (status === 'error') {
+            log(`⚠️ [${analyst.id}/22] ${analyst.name} — ${error ?? 'erreur réseau'} · mode dégradé`, 'warning');
+          } else {
+            log(`❌ [${analyst.id}/22] ${analyst.name} — Aucune publication web trouvée`, 'error');
+          }
+        });
+
+        const found    = searchResults.filter(r => r.status === 'found').length;
+        const notFound = searchResults.filter(r => r.status === 'not_found').length;
+        const errors   = searchResults.filter(r => r.status === 'error').length;
+        log(`📊 Tally: ${found} trouvées · ${errors} erreurs · ${notFound} non trouvées · 0 hallucinations`, 'info');
+
+      } catch (tavilyErr) {
+        if (tavilyErr.cancelled) throw tavilyErr;
+        log(`⚠️ Tavily error: ${tavilyErr.message} — simulation mode`, 'warning');
+        dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'tavily', message: tavilyErr.message });
+        await runSimulation(def, dispatch, signal);
+        searchResults = null;
+      }
+
+    } else if (useGroq) {
       // ── Mode ① : Groq API (synthesis + dashboard) ─────────────
       log('🤖 Groq API (llama-3.3-70b-versatile) — generating execution trace…', 'info');
 
@@ -459,6 +501,8 @@ async function runAgent(agentId, dispatch, signal, period) {
   const finalDuration = Date.now() - t0;
   dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'success', duration: finalDuration });
   log(def.doneMsg, inferLogType(def.doneMsg));
+
+  return searchResults; // non-null only for collector with Tavily
 }
 
 /** Distribute pre-defined logs evenly across simulatedDuration. */
@@ -506,8 +550,34 @@ function pdfFilename(d) {
   return `MacroSynthAI_Report_${y}${m}${day}.pdf`;
 }
 
-function buildSynthesisDataPrompt(periodStr) {
-  return `Tu es un analyste macro CIO senior de premier plan. Génère une analyse de synthèse institutionnelle complète pour la période ${periodStr}, basée sur l'analyse croisée de 14 stratégistes.
+function buildSynthesisDataPrompt(periodStr, searchResults = null) {
+  // Build grounding context from real web search results
+  let webContext = '';
+  if (searchResults?.some(r => r.status === 'found')) {
+    const found   = searchResults.filter(r => r.status === 'found');
+    const missing = searchResults.filter(r => r.status !== 'found').map(r => r.analyst.name);
+
+    const lines = found.map(r => {
+      const articles = r.results.slice(0, 2).map(a =>
+        `  · "${a.title}"\n    URL: ${a.url}\n    Extrait: ${(a.content ?? '').slice(0, 300)}`
+      ).join('\n');
+      return `${r.analyst.name} (${r.analyst.firm}) :\n${articles}`;
+    }).join('\n\n');
+
+    webContext = `
+
+DONNÉES DE RECHERCHE WEB RÉELLES — Tavily Search
+(Ces données proviennent d'une vraie recherche web. Base ton analyse sur ces faits réels, ne pas inventer de positions.)
+
+${lines}
+
+Analystes sans publication web trouvée (${missing.length}) : ${missing.join(', ') || 'aucun'}
+Pour ces analystes : utilise leurs positions stratégiques historiques connues, mais indique une confiance réduite.
+
+RÈGLE CRITIQUE : Toutes les positions générées DOIVENT être cohérentes avec les titres et extraits ci-dessus. Ne jamais contredire une source web citée.`;
+  }
+
+  return `Tu es un analyste macro CIO senior de premier plan. Génère une analyse de synthèse institutionnelle complète pour la période ${periodStr}, basée sur l'analyse croisée de 14 stratégistes.${webContext}
 
 STRATÉGISTES (dans cet ordre exact pour "analysts"):
 1. Jurrien Timmer (Fidelity) 2. Michael Cembalest (JPM EOTM) 3. Marko Papic (BCA Research) 4. Howard Marks (Oaktree Capital) 5. Albert Edwards (Société Générale) 6. Cliff Asness (AQR Capital) 7. George Saravelos (Deutsche Bank) 8. Larry Summers (Harvard) 9. Mohamed El-Erian (Bloomberg/Allianz) 10. Nouriel Roubini (Project Syndicate) 11. Warren Buffett (Berkshire Hathaway) 12. Michael Mauboussin (Morgan Stanley) 13. François Trahan (BMO Capital) 14. Pierre Andurand (Andurand Capital).
@@ -559,9 +629,11 @@ async function runWorkflow(dispatch, signal, period) {
 
     // ── Étape 1 : Collecte des sources ───────────────────────────
     upd(5, 'Étape 1/4 — macro_research_collector');
-    log(`Étape 1 → appel macro_research_collector — période : ${periodStr}`);
-    await runAgent('collector', dispatch, signal, period);
-    log('✅ [QC Étape 1] research_data stocké — 14 sources analysées ≥ 2 ✓', 'success');
+    const tavilyKey = import.meta.env.VITE_TAVILY_API_KEY;
+    log(`Étape 1 → appel macro_research_collector — ${tavilyKey ? 'Tavily web search' : 'simulation'} — période : ${periodStr}`);
+    const searchResults = await runAgent('collector', dispatch, signal, period);
+    const foundCount = searchResults ? searchResults.filter(r => r.status === 'found').length : 14;
+    log(`✅ [QC Étape 1] research_data stocké — ${foundCount}/22 sources ${tavilyKey ? 'trouvées web' : 'analysées'} ≥ 2 ✓`, 'success');
 
     // ── Étape 2 : Synthèse comparative ───────────────────────────
     upd(32, 'Étape 2/4 — comparative_synthesis_agent');
@@ -575,10 +647,15 @@ async function runWorkflow(dispatch, signal, period) {
 
     const groqKey = import.meta.env.VITE_GROQ_API_KEY;
     const synthesisDataPromise = groqKey
-      ? callGroqJSON(buildSynthesisDataPrompt(periodStr), signal)
+      ? callGroqJSON(buildSynthesisDataPrompt(periodStr, searchResults), signal)
           .then(data => dispatch({ type: 'SET_SYNTHESIS_DATA', data }))
-          .catch(e => { if (!e.cancelled) console.warn('Groq JSON synthesis error:', e.message); })
-      : Promise.resolve();
+          .catch(e => {
+            if (!e.cancelled) {
+              console.warn('Groq JSON synthesis error:', e.message);
+              dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'groq', message: e.message });
+            }
+          })
+      : (dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'groq', message: 'Clé VITE_GROQ_API_KEY manquante ou invalide.' }), Promise.resolve());
 
     await Promise.all([
       runAgent('dashboard', dispatch, signal, period),
@@ -747,6 +824,7 @@ export default function App() {
           synthesisData={activeSynthesis}
           period={activePeriod}
           isHistorical={!!viewedEntry}
+          analysisError={viewedEntry ? null : state.analysisError}
         />
       ) : view === 'history' ? (
         <HistoryView
