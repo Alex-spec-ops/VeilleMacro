@@ -1,58 +1,61 @@
 /* ─────────────────────────────────────────────
-   DESIGN TOKENS  —  Blanc & Vibrant Theme
-   Contraste renforcé : textes sombres nets, bordures visibles
+   DESIGN TOKENS  —  veille-macro-ux-design.md
+   Palette professionnelle : navy, green, amber, red
 ───────────────────────────────────────────── */
 export const C = {
   /* ── Backgrounds ── */
-  bg:         '#f0f0eb',   // warm off-white page
-  card:       '#ffffff',   // white cards
-  cardDeep:   '#f4f4f0',   // inset / nested surfaces
-  surface:    '#f9f9f7',   // slightly raised
+  bg:         '#F9FAFB',   // cool light gray (UX doc)
+  card:       '#ffffff',
+  cardDeep:   '#F3F4F6',
+  surface:    '#F9FAFB',
 
-  /* ── Borders — assez foncées pour être visibles ── */
-  border:    '#d8d8d0',   // medium gray border
-  borderHi:  '#b8b8b0',   // hover / highlighted
-  borderDim: '#e8e8e0',   // subtle
+  /* ── Borders ── */
+  border:    '#E5E7EB',
+  borderHi:  '#D1D5DB',
+  borderDim: '#F3F4F6',
 
-  /* ── Text — fort contraste sur fond clair ── */
-  text:      '#111111',   // quasi-noir
-  textMuted: '#444444',   // gris foncé lisible
-  textDim:   '#888888',   // tertiaire visible
+  /* ── Text ── */
+  text:      '#111827',
+  textMuted: '#374151',
+  textDim:   '#9CA3AF',
 
-  /* ── Sidebar / dark surfaces — texte clair ── */
+  /* ── Sidebar / dark surfaces ── */
   sidebarText:       '#ffffff',
-  sidebarTextMuted:  '#c0c0c0',
-  sidebarTextDim:    '#888888',
+  sidebarTextMuted:  '#CBD5E1',
+  sidebarTextDim:    '#94A3B8',
 
   /* ── Status ── */
-  statusIdle: '#888888',
-  statusPend: '#d97706',
-  statusRun:  '#2563eb',
-  statusOk:   '#16a34a',
-  statusErr:  '#dc2626',
-  statusWarn: '#d97706',
+  statusIdle: '#9CA3AF',
+  statusPend: '#F59E0B',   // accent
+  statusRun:  '#1E3A8A',   // primary
+  statusOk:   '#10B981',   // secondary
+  statusErr:  '#EF4444',   // danger
+  statusWarn: '#F59E0B',   // accent
 
-  /* ── Vibrant Brand Palette ── */
-  coral:     '#e53e3e',   // Collector (rouge accessible)
-  orange:    '#dd6b20',   // PDF / pending
-  sunshine:  '#d69e2e',   // progress bar
-  teal:      '#2c7a7b',   // Dashboard
-  emerald:   '#276749',   // success gradient
-  forest:    '#276749',   // success text (wcag AA on white)
-  blue:      '#2563eb',   // Synthesis / orchestrator
-  purple:    '#6b46c1',   // Orchestrator gradient end
+  /* ── Brand Palette  (veille-macro-ux-design.md) ── */
+  blue:      '#1E3A8A',   // Primaire — confiance, stabilité
+  emerald:   '#10B981',   // Secondaire — positif, croissance
+  forest:    '#059669',   // success text (WCAG AA on white)
+  orange:    '#F59E0B',   // Accent — alertes, attention
+  coral:     '#EF4444',   // Danger — risques, baisse
+  sunshine:  '#FBBF24',   // progress bar (amber-400)
+  teal:      '#0D9488',   // Dashboard accent
+  purple:    '#7C3AED',   // Orchestrator gradient end
 
-  /* ── KPI delta badges ── */
-  badgeGreenBg:   '#dcfce7',
-  badgeGreenText: '#15803d',   // dark green on light green
-  badgeRedBg:     '#fee2e2',
-  badgeRedText:   '#b91c1c',   // dark red on light red
-  badgeBlueBg:    '#dbeafe',
-  badgeBlueText:  '#1d4ed8',
+  /* ── KPI badges ── */
+  badgeGreenBg:   '#ECFDF5',
+  badgeGreenText: '#059669',
+  badgeRedBg:     '#FEF2F2',
+  badgeRedText:   '#DC2626',
+  badgeBlueBg:    '#EFF6FF',
+  badgeBlueText:  '#1E3A8A',
 };
 
+/* ── Monospace font (JetBrains Mono — veille-macro-ux-design.md) ── */
+export const MONO = "'JetBrains Mono','Monaco','Courier New',monospace";
+
 /* ─────────────────────────────────────────────
-   LOG TYPE → HEX COLOR
+   LOG TYPE → COLOR
 ───────────────────────────────────────────── */
 export const LOG_COLORS = {
   success: C.forest,

@@ -1,8 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { C, LOG_COLORS, AGENT_EMOJI } from '../constants.js';
+import { C, MONO, LOG_COLORS, AGENT_EMOJI } from '../constants.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
-
-const MONO = "'Monaco','Courier New',monospace";
 
 /**
  * ExecutionLog({ logs })
@@ -95,6 +93,9 @@ export function ExecutionLog({ logs }) {
 
       {/* ── Scrollable content ── */}
       <div
+        aria-live="polite"
+        aria-label="Journal d'exécution"
+        role="log"
         style={{
           maxHeight:      420,
           overflowY:      'auto',

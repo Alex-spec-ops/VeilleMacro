@@ -9,13 +9,13 @@
   button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 }
 
-/* ── Smooth horizontal scroll for tables on touch ── */
+/* ── Global table scroll wrapper ── */
 .scroll-x {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-/* ── Hide scrollbar on tab navigation (keep functionality) ── */
+/* ── Tab navigation scroll (hide scrollbar, keep functionality) ── */
 .tabs-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;

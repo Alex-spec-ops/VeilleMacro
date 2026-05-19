@@ -2,9 +2,7 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { StatusBadge } from './StatusBadge.jsx';
 import { fmtS } from '../utils.js';
-import { C } from '../constants.js';
-
-const MONO = "'Monaco','Courier New',monospace";
+import { C, MONO } from '../constants.js';
 
 /**
  * AgentCard({ agent, config })

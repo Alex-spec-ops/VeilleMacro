@@ -1,10 +1,8 @@
 import React from 'react';
 import { RotateCcw, Loader2 } from 'lucide-react';
 import { StatusBadge } from './StatusBadge.jsx';
-import { C } from '../constants.js';
+import { C, MONO } from '../constants.js';
 import { useBreakpoint } from '../hooks/useBreakpoint.js';
-
-const MONO = "'Monaco','Courier New',monospace";
 
 /**
  * OrchestratorCard({ status, progress, currentStep, onLaunch, onReset })

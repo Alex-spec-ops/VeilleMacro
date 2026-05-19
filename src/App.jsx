@@ -799,16 +799,25 @@ export default function App() {
         display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap',
         padding: isMobile ? '12px 16px 0' : '20px 32px 0', margin: '0 auto', maxWidth: 1440,
       }}>
-        <button onClick={() => { setView('orchestrator'); setViewedEntry(null); }} style={btnStyle(view === 'orchestrator' && !viewedEntry, C.blue)}>
+        <button
+          onClick={() => { setView('orchestrator'); setViewedEntry(null); }}
+          aria-pressed={view === 'orchestrator' && !viewedEntry}
+          style={btnStyle(view === 'orchestrator' && !viewedEntry, C.blue)}
+        >
           🔧 Orchestrateur
         </button>
         {hasRun && (
-          <button onClick={() => { setView('dashboard'); setViewedEntry(null); }} style={btnStyle(view === 'dashboard' && !viewedEntry, C.emerald)}>
+          <button
+            onClick={() => { setView('dashboard'); setViewedEntry(null); }}
+            aria-pressed={view === 'dashboard' && !viewedEntry}
+            style={btnStyle(view === 'dashboard' && !viewedEntry, C.emerald)}
+          >
             📊 Rapport de Synthèse
           </button>
         )}
         <button
           onClick={() => setView('history')}
+          aria-pressed={view === 'history' || !!viewedEntry}
           style={btnStyle(view === 'history' || !!viewedEntry, '#6B46C1')}
         >
           📂 Historique
@@ -825,7 +834,18 @@ export default function App() {
         </button>
       </div>
 
-      {/* ── Views ── */}
+      {/* ── Views — key triggers fade+scale transition on change ── */}
+      <div
+        key={view + (viewedEntry?.id ?? '')}
+        className="view-enter"
+        id="main-content"
+        role="main"
+        aria-label={
+          view === 'dashboard' || viewedEntry ? 'Rapport de synthèse' :
+          view === 'history'                   ? 'Historique des analyses' :
+                                                 'Orchestrateur de workflow'
+        }
+      >
       {view === 'dashboard' || viewedEntry ? (
         <SynthesisDashboard
           synthesisData={activeSynthesis}
@@ -889,6 +909,7 @@ export default function App() {
           </div>
         </main>
       )}
+      </div>{/* end view-enter */}
     </div>
   );
 }

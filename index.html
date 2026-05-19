@@ -4,18 +4,71 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VeilleMacro — Agent Orchestrator</title>
+  <title>VeilleMacro — Agent Orchestrateur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      /* ── Palette — veille-macro-ux-design.md ── */
+      --color-primary:   #1E3A8A;
+      --color-secondary: #10B981;
+      --color-accent:    #F59E0B;
+      --color-danger:    #EF4444;
+      --color-neutral:   #6B7280;
+      --color-bg:        #F9FAFB;
+
+      /* ── Spacing ── */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+
+      /* ── Radius ── */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+
+      /* ── Shadows ── */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+      --shadow-lg: 0 10px 24px rgba(0,0,0,0.10);
+
+      /* ── Typography ── */
+      --font-sans: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;
+    }
+
     body {
-      background: #f0f0eb;
-      font-family: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--color-bg);
+      font-family: var(--font-sans);
       -webkit-font-smoothing: antialiased;
-      color: #1a1a1a;
+      -moz-osx-font-smoothing: grayscale;
+      color: #111827;
     }
 
     #root { min-height: 100vh; }
+
+    /* ── Skip to content (accessibilité) ── */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: var(--space-md);
+      background: var(--color-primary);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 14px;
+      z-index: 9999;
+      text-decoration: none;
+      transition: top 0.15s;
+    }
+    .skip-link:focus { top: var(--space-md); }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -122,15 +175,41 @@
       background:    #E0E7FF !important;
     }
 
+    /* ── Focus visible (WCAG 2.1 AA) ── */
+    :focus-visible {
+      outline: 3px solid #3B82F6;
+      outline-offset: 2px;
+    }
+    :focus:not(:focus-visible) { outline: none; }
+
     /* Date inputs focus ring */
     input[type="date"]:focus {
-      border-color: #667EEA !important;
-      box-shadow:   0 0 0 3px rgba(102, 126, 234, 0.12);
+      border-color: var(--color-primary) !important;
+      box-shadow:   0 0 0 3px rgba(30, 58, 138, 0.12);
+    }
+
+    /* ── View transition (fade + scale) ── */
+    @keyframes view-in {
+      from { opacity: 0; transform: scale(0.97) translateY(4px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);   }
+    }
+    .view-enter {
+      animation: view-in 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    /* ── prefers-reduced-motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>

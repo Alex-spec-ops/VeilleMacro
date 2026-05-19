@@ -15,6 +15,8 @@ export function Header({ status, lastRun }) {
 
   return (
     <header
+      role="banner"
+      aria-label="MacroSynthAI"
       style={{
         background:     '#ffffff',
         borderBottom:   `2px solid ${C.border}`,
