@@ -215,10 +215,6 @@ export function AgentCard({ agent, config }) {
         </div>
       </div>
 
-      {/* ── Timer / status line ── */}
-      <div style={{ minHeight: 20 }}>
-        {timerNode}
-      </div>
     </div>
   );
 }

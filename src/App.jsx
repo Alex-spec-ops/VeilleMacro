@@ -721,8 +721,6 @@ export default function App() {
           <AgentCard agent={state.agents.pdf}       config={AGENTS.pdf} />
         </div>
 
-        {/* ── Execution Log ── */}
-        <ExecutionLog logs={state.logs} />
 
         {/* ── Footer ── */}
         <div
