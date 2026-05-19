@@ -715,15 +715,13 @@ export default function App() {
         display: 'flex', justifyContent: 'center', gap: 10,
         padding: '20px 32px 0', margin: '0 auto', maxWidth: 1440,
       }}>
+        <button onClick={() => { setView('orchestrator'); setViewedEntry(null); }} style={btnStyle(view === 'orchestrator' && !viewedEntry, C.blue)}>
+          🔧 Orchestrateur
+        </button>
         {hasRun && (
-          <>
-            <button onClick={() => { setView('orchestrator'); setViewedEntry(null); }} style={btnStyle(view === 'orchestrator', C.blue)}>
-              🔧 Orchestrateur
-            </button>
-            <button onClick={() => { setView('dashboard'); setViewedEntry(null); }} style={btnStyle(view === 'dashboard' && !viewedEntry, C.emerald)}>
-              📊 Rapport de Synthèse
-            </button>
-          </>
+          <button onClick={() => { setView('dashboard'); setViewedEntry(null); }} style={btnStyle(view === 'dashboard' && !viewedEntry, C.emerald)}>
+            📊 Rapport de Synthèse
+          </button>
         )}
         <button
           onClick={() => setView('history')}
