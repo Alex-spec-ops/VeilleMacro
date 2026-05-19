@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PdfReportModal } from './PdfReportModal.jsx';
 
 /* ── Fallback data (used when Groq key absent or call failed) ─────── */
 const FALLBACK = {
@@ -625,6 +626,7 @@ const TABS = [
 
 export function SynthesisDashboard({ synthesisData, period, isHistorical }) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [showPdf, setShowPdf]     = useState(false);
   const data = synthesisData || FALLBACK;
 
   const startLabel = period?.start ? new Date(period.start).toLocaleDateString('fr-FR') : '—';
@@ -656,11 +658,42 @@ export function SynthesisDashboard({ synthesisData, period, isHistorical }) {
             )}
           </div>
         </div>
-        <div style={{ background: sentBg, padding: '8px 18px', borderRadius: 8, textAlign: 'right' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: sentColor, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sentiment Global</div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: sentColor }}>{data.sentiment}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={() => setShowPdf(true)}
+            title={synthesisData ? 'Générer le rapport PDF avec données Groq' : 'Rapport PDF (clé Groq requise pour données live)'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+              background: synthesisData ? '#1d4ed8' : '#f3f4f6',
+              color:      synthesisData ? '#ffffff' : '#6b7280',
+              border:     synthesisData ? 'none' : '1.5px solid #e5e7eb',
+              fontSize: 13, fontWeight: 700, transition: 'all 0.2s',
+            }}
+          >
+            📄 Rapport PDF
+            {!synthesisData && (
+              <span style={{ fontSize: 9, fontWeight: 600, color: '#d97706', background: '#fef3c7', padding: '1px 5px', borderRadius: 3 }}>
+                Groq
+              </span>
+            )}
+          </button>
+
+          <div style={{ background: sentBg, padding: '8px 18px', borderRadius: 8, textAlign: 'right' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: sentColor, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sentiment Global</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: sentColor }}>{data.sentiment}</div>
+          </div>
         </div>
       </div>
+
+      {showPdf && (
+        <PdfReportModal
+          data={data}
+          period={period}
+          isGroqData={!!synthesisData}
+          onClose={() => setShowPdf(false)}
+        />
+      )}
 
       {/* ── Tab navigation ── */}
       <div style={{ background: '#fff', borderBottom: '1px solid #E5E7EB', padding: '0 32px', display: 'flex', gap: 2, overflowX: 'auto' }}>
