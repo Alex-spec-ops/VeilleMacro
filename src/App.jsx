@@ -12,7 +12,7 @@ import { SynthesisDashboard } from './components/SynthesisDashboard.jsx';
 import { C }                        from './constants.js';
 import { inferLogType, sleep }      from './utils.js';
 import { callGemini }               from './gemini.js';
-import { callGroq }                 from './groq.js';
+import { callGroq, callGroqJSON }    from './groq.js';
 
 /* ─────────────────────────────────────────────
    AGENT DEFINITIONS  (metadata, no state)
@@ -249,10 +249,11 @@ const ORDER = ['collector', 'synthesis', 'dashboard', 'pdf'];
    STATE & REDUCER
 ───────────────────────────────────────────── */
 const initialState = {
-  globalStatus: 'idle',   // idle | running | success | error
-  lastRun:      null,
-  progress:     0,
-  currentStep:  null,
+  globalStatus:  'idle',   // idle | running | success | error
+  lastRun:       null,
+  progress:      0,
+  currentStep:   null,
+  synthesisData: null,
   agents: {
     collector: { status: 'idle', duration: 0 },
     synthesis: { status: 'idle', duration: 0 },
@@ -294,6 +295,9 @@ function reducer(state, action) {
           },
         ].slice(-80),
       };
+
+    case 'SET_SYNTHESIS_DATA':
+      return { ...state, synthesisData: action.data };
 
     case 'COMPLETE_WORKFLOW':
       return { ...state, globalStatus: 'success', progress: 100, lastRun: Date.now(), currentStep: null };
@@ -500,6 +504,40 @@ function pdfFilename(d) {
   return `MacroSynthAI_Report_${y}${m}${day}.pdf`;
 }
 
+function buildSynthesisDataPrompt(periodStr) {
+  return `Tu es un analyste macro CIO senior de premier plan. Génère une analyse de synthèse institutionnelle complète pour la période ${periodStr}, basée sur l'analyse croisée de 14 stratégistes.
+
+STRATÉGISTES (dans cet ordre exact pour "analysts"):
+1. Jurrien Timmer (Fidelity) 2. Michael Cembalest (JPM EOTM) 3. Marko Papic (BCA Research) 4. Howard Marks (Oaktree Capital) 5. Albert Edwards (Société Générale) 6. Cliff Asness (AQR Capital) 7. George Saravelos (Deutsche Bank) 8. Larry Summers (Harvard) 9. Mohamed El-Erian (Bloomberg/Allianz) 10. Nouriel Roubini (Project Syndicate) 11. Warren Buffett (Berkshire Hathaway) 12. Michael Mauboussin (Morgan Stanley) 13. François Trahan (BMO Capital) 14. Pierre Andurand (Andurand Capital).
+
+STANCES possibles : "Bull" | "Bear" | "Neutre"
+CHAMPS positionnement par analyste : actionsUS, actionsIntl, oblig, credit, matieres, crypto
+THÈMES matrix (6, dans cet ordre) : "Actions US (S&P/Nasdaq)", "Actions Intl EAFE/EM", "Obligations IG", "Crédit High Yield", "Matières Premières (Pétrole/Or)", "Crypto (Bitcoin)"
+CLÉS analysts dans matrix : Timmer, Cembalest, Papic, Marks, Edwards, Asness, Saravelos, Summers, ElErian, Roubini, Buffett, Mauboussin, Trahan, Andurand
+
+Génère des données RÉALISTES, PRÉCISES et CONTRASTÉES pour cette période. Inclus des données chiffrées (P/E, probabilités, niveaux de prix). Inclus exactement 5 convergences, 3 divergences, 4 idées, 4 risques.
+
+RETOURNE UNIQUEMENT CE JSON (sans markdown):
+{
+  "sentiment": "RISK-OFF STRUCTUREL",
+  "sentimentColor": "red",
+  "summary": "3-4 phrases avec données chiffrées précises",
+  "stats": {"sourcesAnalyzed":14,"convergences":5,"divergences":3,"newIdeas":4,"risks":4},
+  "convergences": [{"theme":"...","consensus":"Bear|Bull|Neutre|Risk-Off|Critique","score":"X/14","authors":["NomCourt"],"implication":"Recommandation concrète portefeuille"}],
+  "divergences": [{"theme":"...","posA":"Position haussière précise","authorsA":["NomFirme"],"posB":"Position baissière précise","authorsB":["NomFirme"],"arbitrage":"Recommandation CIO concrète"}],
+  "ideas": [{"title":"Titre concis","author":"PrénomNom","firm":"Firme","rationale":"2 phrases précises avec rationale chiffré","conviction":"Élevée|Moyenne","assetClass":"Classe d'actif"}],
+  "risks": [{"risk":"Nom du risque","severity":"Élevé|Moyen","authors":["NomCourt"],"count":N,"impact":"Impact concret chiffré"}],
+  "analysts": [
+    {"name":"Jurrien Timmer","firm":"Fidelity","sentiment":"Bullish|Bearish|Neutre|Prudent","keyTakeaway":"1 phrase précise en français","actionsUS":"Bull|Bear|Neutre","actionsIntl":"Bull|Bear|Neutre","oblig":"Bull|Bear|Neutre","credit":"Bull|Bear|Neutre","matieres":"Bull|Bear|Neutre","crypto":"Bull|Bear|Neutre"},
+    (répéter pour les 14 analystes dans l'ordre)
+  ],
+  "matrix": [
+    {"theme":"Actions US (S&P/Nasdaq)","Timmer":"...","Cembalest":"...","Papic":"...","Marks":"...","Edwards":"...","Asness":"...","Saravelos":"...","Summers":"...","ElErian":"...","Roubini":"...","Buffett":"...","Mauboussin":"...","Trahan":"...","Andurand":"...","consensus":"..."},
+    (répéter pour les 6 thèmes dans l'ordre)
+  ]
+}`;
+}
+
 async function runWorkflow(dispatch, signal, period) {
   const upd = (progress, currentStep) =>
     dispatch({ type: 'UPDATE_PROGRESS', progress, currentStep });
@@ -532,9 +570,18 @@ async function runWorkflow(dispatch, signal, period) {
     // ── Étapes 3 + 3B : fork parallèle ───────────────────────────
     upd(52, 'Étapes 3+3B/4 — dashboard_generator_agent ∥ pdf_report_generator');
     log('Étape 3 + 3B — fork parallèle → dashboard_generator_agent ∥ pdf_report_generator');
+
+    const groqKey = import.meta.env.VITE_GROQ_API_KEY;
+    const synthesisDataPromise = groqKey
+      ? callGroqJSON(buildSynthesisDataPrompt(periodStr), signal)
+          .then(data => dispatch({ type: 'SET_SYNTHESIS_DATA', data }))
+          .catch(e => { if (!e.cancelled) console.warn('Groq JSON synthesis error:', e.message); })
+      : Promise.resolve();
+
     await Promise.all([
       runAgent('dashboard', dispatch, signal, period),
       runAgent('pdf',       dispatch, signal, period),
+      synthesisDataPromise,
     ]);
     log('✅ [QC Étape 3] dashboard_url stocké — Frame Dust live ✓', 'success');
     log(`✅ [QC Étape 3B] pdf_path stocké — /mnt/user-data/outputs/${pdfName} ✓`, 'success');

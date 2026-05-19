@@ -62,3 +62,54 @@ export async function callGroq(prompt, cancellationSignal) {
     clearInterval(cancelWatch);
   }
 }
+
+/**
+ * callGroqJSON(prompt, cancellationSignal?)
+ *
+ * Same as callGroq but forces JSON output via response_format.
+ * @returns {Promise<object>} - Parsed JSON object from Groq
+ */
+export async function callGroqJSON(prompt, cancellationSignal) {
+  const key = import.meta.env.VITE_GROQ_API_KEY;
+  if (!key) throw new Error('VITE_GROQ_API_KEY non défini dans .env');
+
+  const abortCtrl = new AbortController();
+  const cancelWatch = setInterval(() => {
+    if (cancellationSignal?.cancelled) abortCtrl.abort();
+  }, 100);
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      signal: abortCtrl.signal,
+      body: JSON.stringify({
+        model:            MODEL,
+        messages:         [{ role: 'user', content: prompt }],
+        temperature:      0.3,
+        max_tokens:       6000,
+        response_format:  { type: 'json_object' },
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Groq ${res.status}: ${err.error?.message ?? res.statusText}`);
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content ?? '{}';
+    return JSON.parse(text);
+
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      const c = new Error('cancelled'); c.cancelled = true; throw c;
+    }
+    throw e;
+  } finally {
+    clearInterval(cancelWatch);
+  }
+}
