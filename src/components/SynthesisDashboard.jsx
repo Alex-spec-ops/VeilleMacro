@@ -623,9 +623,9 @@ const TABS = [
   { id: 'analysts',  label: 'Tableau Analystes (14)',     icon: '👥' },
 ];
 
-export function SynthesisDashboard({ state, period }) {
+export function SynthesisDashboard({ synthesisData, period, isHistorical }) {
   const [activeTab, setActiveTab] = useState('overview');
-  const data = state.synthesisData || FALLBACK;
+  const data = synthesisData || FALLBACK;
 
   const startLabel = period?.start ? new Date(period.start).toLocaleDateString('fr-FR') : '—';
   const endLabel   = period?.end   ? new Date(period.end).toLocaleDateString('fr-FR')   : '—';
@@ -644,9 +644,14 @@ export function SynthesisDashboard({ state, period }) {
             Période : <strong style={{ color: '#111827' }}>{startLabel} → {endLabel}</strong>
             &nbsp;·&nbsp; {data.stats.sourcesAnalyzed} sources institutionnelles
             &nbsp;·&nbsp; <span style={{ color: '#9CA3AF' }}>Usage interne — Confidentiel</span>
-            {state.synthesisData && (
+            {synthesisData && (
               <span style={{ marginLeft: 8, fontSize: 10, color: '#059669', fontWeight: 700, background: '#DCFCE7', padding: '1px 6px', borderRadius: 4 }}>
                 ✓ Analyse Groq
+              </span>
+            )}
+            {isHistorical && (
+              <span style={{ marginLeft: 4, fontSize: 10, color: '#D97706', fontWeight: 700, background: '#FEF3C7', padding: '1px 6px', borderRadius: 4 }}>
+                ⏮ Historique
               </span>
             )}
           </div>

@@ -8,11 +8,13 @@ import { StatsBar }         from './components/StatsBar.jsx';
 import { PeriodSelector }   from './components/PeriodSelector.jsx';
 import { PipelineChart }    from './components/PipelineChart.jsx';
 import { SynthesisDashboard } from './components/SynthesisDashboard.jsx';
+import { HistoryView }        from './components/HistoryView.jsx';
 
-import { C }                        from './constants.js';
-import { inferLogType, sleep }      from './utils.js';
-import { callGemini }               from './gemini.js';
-import { callGroq, callGroqJSON }    from './groq.js';
+import { C }                                          from './constants.js';
+import { inferLogType, sleep }                        from './utils.js';
+import { callGemini }                                 from './gemini.js';
+import { callGroq, callGroqJSON }                     from './groq.js';
+import { loadHistory, saveAnalysis, deleteAnalysis, clearHistory } from './history.js';
 
 /* ─────────────────────────────────────────────
    AGENT DEFINITIONS  (metadata, no state)
@@ -616,9 +618,11 @@ async function runWorkflow(dispatch, signal, period) {
    ROOT APP
 ───────────────────────────────────────────── */
 export default function App() {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch]       = useReducer(reducer, initialState);
   const [dateRange, setDateRange] = useState({ start: null, end: null });
-  const [view, setView]           = useState('orchestrator'); // 'orchestrator' | 'dashboard'
+  const [view, setView]         = useState('orchestrator'); // 'orchestrator' | 'dashboard' | 'history'
+  const [historyList, setHistoryList] = useState(() => loadHistory());
+  const [viewedEntry, setViewedEntry] = useState(null); // history entry loaded in dashboard
 
   const signalRef = useRef({ cancelled: false });
   const clockRef  = useRef(null);
@@ -632,6 +636,24 @@ export default function App() {
     clearInterval(clockRef.current);
   }, []);
 
+  /* ── Save to history when workflow completes ── */
+  useEffect(() => {
+    if (state.globalStatus !== 'success') return;
+    const data = state.synthesisData;
+    const entry = {
+      id:             Date.now().toString(),
+      timestamp:      Date.now(),
+      period:         dateRange,
+      synthesisData:  data,
+      sentiment:      data?.sentiment      ?? 'RISK-OFF STRUCTUREL',
+      sentimentColor: data?.sentimentColor ?? 'red',
+      stats:          data?.stats          ?? { sourcesAnalyzed: 14, convergences: 5, divergences: 3, newIdeas: 4, risks: 4 },
+    };
+    saveAnalysis(entry);
+    setHistoryList(loadHistory());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.globalStatus]);
+
   /* ── startWorkflow ──────────────────────── */
   const startWorkflow = useCallback(async () => {
     if (state.globalStatus === 'running') return;
@@ -641,147 +663,144 @@ export default function App() {
     signalRef.current = signal;
     clockRef.current  = setInterval(() => {}, 100);
 
+    setViewedEntry(null);
     dispatch({ type: 'START_WORKFLOW' });
     await runWorkflow(dispatch, signal, dateRange);
 
     clearInterval(clockRef.current);
   }, [state.globalStatus, dateRange, dateRangeValid]);
 
-  const hasRun = state.globalStatus === 'success';
+  /* ── History actions ────────────────────── */
+  const handleLoadEntry = (entry) => {
+    setViewedEntry(entry);
+    setView('dashboard');
+  };
+  const handleDeleteEntry = (id) => {
+    deleteAnalysis(id);
+    setHistoryList(loadHistory());
+    if (viewedEntry?.id === id) setViewedEntry(null);
+  };
+  const handleClearHistory = () => {
+    clearHistory();
+    setHistoryList([]);
+    if (viewedEntry) setViewedEntry(null);
+  };
+
+  /* ── Derived display values ─────────────── */
+  const hasRun          = state.globalStatus === 'success';
+  const activeSynthesis = viewedEntry ? viewedEntry.synthesisData : state.synthesisData;
+  const activePeriod    = viewedEntry ? viewedEntry.period        : dateRange;
+
+  /* ── View button style helper ───────────── */
+  const btnStyle = (active, color) => ({
+    padding: '10px 22px', borderRadius: 10,
+    border: `1.5px solid ${active ? color : C.border}`,
+    background: active ? `${color}12` : '#ffffff',
+    color: active ? color : '#555555',
+    fontSize: 13, fontWeight: 700, cursor: 'pointer',
+    transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 8,
+  });
 
   return (
-    <div
-      style={{
-        minHeight:  '100vh',
-        background: C.bg,
-        color:      C.text,
-        fontFamily: "'Inter','Helvetica Neue',-apple-system,BlinkMacSystemFont,sans-serif",
-      }}
-    >
+    <div style={{
+      minHeight:  '100vh',
+      background: C.bg,
+      color:      C.text,
+      fontFamily: "'Inter','Helvetica Neue',-apple-system,BlinkMacSystemFont,sans-serif",
+    }}>
       <Header status={state.globalStatus} lastRun={state.lastRun} />
 
       {/* ── View Switcher ── */}
-      {state.globalStatus === 'success' && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 12,
-          padding: '24px 32px 0',
-          margin: '0 auto',
-          maxWidth: 1440
-        }}>
-          <button
-            onClick={() => setView('orchestrator')}
-            style={{
-              padding: '10px 24px',
-              borderRadius: 10,
-              border: `1.5px solid ${view === 'orchestrator' ? C.blue : C.border}`,
-              background: view === 'orchestrator' ? `${C.blue}10` : '#ffffff',
-              color: view === 'orchestrator' ? C.blue : '#555555',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}
-          >
-            🔧 Orchestrateur
-          </button>
-          <button
-            onClick={() => setView('dashboard')}
-            style={{
-              padding: '10px 24px',
-              borderRadius: 10,
-              border: `1.5px solid ${view === 'dashboard' ? C.emerald : C.border}`,
-              background: view === 'dashboard' ? `${C.emerald}10` : '#ffffff',
-              color: view === 'dashboard' ? C.emerald : '#555555',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}
-          >
-            📊 Rapport de Synthèse
-          </button>
-        </div>
-      )}
+      <div style={{
+        display: 'flex', justifyContent: 'center', gap: 10,
+        padding: '20px 32px 0', margin: '0 auto', maxWidth: 1440,
+      }}>
+        {hasRun && (
+          <>
+            <button onClick={() => { setView('orchestrator'); setViewedEntry(null); }} style={btnStyle(view === 'orchestrator', C.blue)}>
+              🔧 Orchestrateur
+            </button>
+            <button onClick={() => { setView('dashboard'); setViewedEntry(null); }} style={btnStyle(view === 'dashboard' && !viewedEntry, C.emerald)}>
+              📊 Rapport de Synthèse
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => setView('history')}
+          style={btnStyle(view === 'history' || !!viewedEntry, '#6B46C1')}
+        >
+          📂 Historique
+          {historyList.length > 0 && (
+            <span style={{
+              background: view === 'history' || viewedEntry ? '#6B46C1' : '#E5E7EB',
+              color: view === 'history' || viewedEntry ? '#fff' : '#6B7280',
+              fontSize: 10, fontWeight: 800, padding: '1px 6px',
+              borderRadius: 20, minWidth: 18, textAlign: 'center',
+            }}>
+              {historyList.length}
+            </span>
+          )}
+        </button>
+      </div>
 
-      {view === 'dashboard' ? (
-        <SynthesisDashboard state={state} period={dateRange} />
+      {/* ── Views ── */}
+      {view === 'dashboard' || viewedEntry ? (
+        <SynthesisDashboard
+          synthesisData={activeSynthesis}
+          period={activePeriod}
+          isHistorical={!!viewedEntry}
+        />
+      ) : view === 'history' ? (
+        <HistoryView
+          historyList={historyList}
+          onLoad={handleLoadEntry}
+          onDelete={handleDeleteEntry}
+          onClear={handleClearHistory}
+        />
       ) : (
-        <main
-          style={{
-            maxWidth:      1440,
-            margin:        '0 auto',
-            padding:       '28px 32px',
-            display:       'flex',
-            flexDirection: 'column',
-            gap:           24,
-          }}
-        >
-        {/* ── Stats Bar ── */}
-        <StatsBar isActive={hasRun} />
+        <main style={{
+          maxWidth: 1440, margin: '0 auto', padding: '28px 32px',
+          display: 'flex', flexDirection: 'column', gap: 24,
+        }}>
+          <StatsBar isActive={hasRun} />
 
-        {/* ── Period Selector ── */}
-        <PeriodSelector
-          startDate={dateRange.start}
-          endDate={dateRange.end}
-          onChange={setDateRange}
-          disabled={state.globalStatus === 'running'}
-        />
+          <PeriodSelector
+            startDate={dateRange.start}
+            endDate={dateRange.end}
+            onChange={setDateRange}
+            disabled={state.globalStatus === 'running'}
+          />
 
-        {/* ── Orchestrator ── */}
-        <OrchestratorCard
-          status={state.globalStatus}
-          progress={state.progress}
-          currentStep={state.currentStep}
-          canLaunch={!!dateRangeValid}
-          onLaunch={startWorkflow}
-          onReset={() => {
-            signalRef.current.cancelled = true;
-            clearInterval(clockRef.current);
-            dispatch({ type: 'RESET' });
-            setView('orchestrator');
-          }}
-          onViewResults={() => setView('dashboard')}
-        />
+          <OrchestratorCard
+            status={state.globalStatus}
+            progress={state.progress}
+            currentStep={state.currentStep}
+            canLaunch={!!dateRangeValid}
+            onLaunch={startWorkflow}
+            onReset={() => {
+              signalRef.current.cancelled = true;
+              clearInterval(clockRef.current);
+              dispatch({ type: 'RESET' });
+              setView('orchestrator');
+              setViewedEntry(null);
+            }}
+            onViewResults={() => setView('dashboard')}
+          />
 
-        {/* ── Visual Monitoring (Chart) ── */}
-        <PipelineChart agents={state.agents} />
+          <PipelineChart agents={state.agents} />
 
-        {/* ── Agent cards — 3-col grid, 4th wraps to next row ── */}
-        <div
-          style={{
-            display:             'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap:                 24,
-          }}
-        >
-          <AgentCard agent={state.agents.collector} config={AGENTS.collector} />
-          <AgentCard agent={state.agents.synthesis} config={AGENTS.synthesis} />
-          <AgentCard agent={state.agents.dashboard} config={AGENTS.dashboard} />
-          <AgentCard agent={state.agents.pdf}       config={AGENTS.pdf} />
-        </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+            <AgentCard agent={state.agents.collector} config={AGENTS.collector} />
+            <AgentCard agent={state.agents.synthesis} config={AGENTS.synthesis} />
+            <AgentCard agent={state.agents.dashboard} config={AGENTS.dashboard} />
+            <AgentCard agent={state.agents.pdf}       config={AGENTS.pdf} />
+          </div>
 
-
-        {/* ── Footer ── */}
-        <div
-          style={{
-            textAlign:   'center',
-            color:       '#666666',
-            fontSize:    11,
-            paddingBottom: 8,
-          }}
-        >
-          MacroSynthAI · Agent Orchestration Platform · {new Date().getFullYear()}
-        </div>
-      </main>
-    )}
-  </div>
+          <div style={{ textAlign: 'center', color: '#666666', fontSize: 11, paddingBottom: 8 }}>
+            MacroSynthAI · Agent Orchestration Platform · {new Date().getFullYear()}
+          </div>
+        </main>
+      )}
+    </div>
   );
 }
