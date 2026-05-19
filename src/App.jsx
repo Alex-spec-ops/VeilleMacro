@@ -12,6 +12,7 @@ import { SynthesisDashboard } from './components/SynthesisDashboard.jsx';
 import { C }                        from './constants.js';
 import { inferLogType, sleep }      from './utils.js';
 import { callGemini }               from './gemini.js';
+import { callGroq }                 from './groq.js';
 
 /* ─────────────────────────────────────────────
    AGENT DEFINITIONS  (metadata, no state)
@@ -383,24 +384,28 @@ async function runAgent(agentId, dispatch, signal, period) {
     dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'running', duration: Date.now() - t0 });
   }, 100);
 
+  const groqKey   = import.meta.env.VITE_GROQ_API_KEY;
   const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
+  // Agents synthesis & dashboard prefer Groq; all others prefer Gemini
+  const useGroq   = groqKey && def.geminiPrompt && (agentId === 'synthesis' || agentId === 'dashboard');
+  const useGemini = geminiKey && def.geminiPrompt && !useGroq;
+
   try {
-    if (geminiKey && def.geminiPrompt) {
-      // ── Mode ① : Gemini API ────────────────────────────────────
-      log('🤖 Gemini API (gemini-2.0-flash) — generating execution trace…', 'info');
+    if (useGroq) {
+      // ── Mode ① : Groq API (synthesis + dashboard) ─────────────
+      log('🤖 Groq API (llama-3.3-70b-versatile) — generating execution trace…', 'info');
 
       let responseText;
       try {
-        responseText = await callGemini(def.geminiPrompt, signal);
+        responseText = await callGroq(def.geminiPrompt, signal);
       } catch (apiErr) {
-        if (apiErr.cancelled) throw apiErr;            // propagate reset
-        log(`⚠️ Gemini API error: ${apiErr.message} — falling back to simulation`, 'warning');
+        if (apiErr.cancelled) throw apiErr;
+        log(`⚠️ Groq API error: ${apiErr.message} — falling back to simulation`, 'warning');
         responseText = null;
       }
 
       if (responseText) {
-        // Stream each response line with a small delay for readability
         const lines = responseText.split('\n').map(l => l.trim()).filter(Boolean);
         for (const line of lines) {
           if (signal.cancelled) return;
@@ -408,12 +413,35 @@ async function runAgent(agentId, dispatch, signal, period) {
           await sleepC(150, signal);
         }
       } else {
-        // Fallback within Gemini mode: run simulation
+        await runSimulation(def, dispatch, signal);
+      }
+
+    } else if (useGemini) {
+      // ── Mode ② : Gemini API (collector + pdf) ─────────────────
+      log('🤖 Gemini API (gemini-2.0-flash) — generating execution trace…', 'info');
+
+      let responseText;
+      try {
+        responseText = await callGemini(def.geminiPrompt, signal);
+      } catch (apiErr) {
+        if (apiErr.cancelled) throw apiErr;
+        log(`⚠️ Gemini API error: ${apiErr.message} — falling back to simulation`, 'warning');
+        responseText = null;
+      }
+
+      if (responseText) {
+        const lines = responseText.split('\n').map(l => l.trim()).filter(Boolean);
+        for (const line of lines) {
+          if (signal.cancelled) return;
+          log(line, inferLogType(line));
+          await sleepC(150, signal);
+        }
+      } else {
         await runSimulation(def, dispatch, signal);
       }
 
     } else {
-      // ── Mode ② : Simulation ────────────────────────────────────
+      // ── Mode ③ : Simulation ────────────────────────────────────
       await runSimulation(def, dispatch, signal);
     }
 
