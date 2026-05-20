@@ -12,7 +12,7 @@ import { HistoryView }        from './components/HistoryView.jsx';
 
 import { C }                                          from './constants.js';
 import { inferLogType, sleep }                        from './utils.js';
-import { callGemini }                                 from './gemini.js';
+import { callGemini, callGeminiJSON }                 from './gemini.js';
 import { callGroq, callGroqJSON }                     from './groq.js';
 import { searchAllAnalysts }                           from './tavily.js';
 import { loadHistory, saveAnalysis, deleteAnalysis, clearHistory } from './history.js';
@@ -294,9 +294,16 @@ async function runAgent(agentId, dispatch, signal, period) {
       log(`📊 Tally: ${found} trouvées · ${errors} erreurs · ${notFound} non trouvées · 0 hallucinations`, 'info');
 
     } else if (useGroq) {
-      // ── Mode ① : Groq API (synthesis + dashboard) ─────────────
+      // ── Mode ① : Groq (synthesis + dashboard) — Gemini en secours ──
       log('🤖 Groq API (llama-3.3-70b-versatile) — generating execution trace…', 'info');
-      const responseText = await callGroq(def.geminiPrompt, signal);
+      let responseText;
+      try {
+        responseText = await callGroq(def.geminiPrompt, signal);
+      } catch (groqErr) {
+        if (groqErr.cancelled) throw groqErr;
+        log(`⚠️ Groq indisponible (${groqErr.message}) — bascule sur Gemini…`, 'warning');
+        responseText = await callGemini(def.geminiPrompt, signal);
+      }
       const lines = responseText.split('\n').map(l => l.trim()).filter(Boolean);
       for (const line of lines) {
         if (signal.cancelled) return;
@@ -474,8 +481,13 @@ async function runWorkflow(dispatch, signal, period) {
     upd(32, 'Étape 2/4 — comparative_synthesis_agent (Groq)');
     log(`Étape 2 → Groq analyse croisée — llama-3.3-70b-versatile — input : ${foundCount} sources Tavily`);
 
-    // Lance en parallèle : logs d'exécution (Groq) + vraie synthèse JSON (Groq)
+    // Lance en parallèle : logs d'exécution + synthèse JSON (Groq → Gemini en secours)
     const synthesisDataPromise = callGroqJSON(buildSynthesisDataPrompt(periodStr, searchResults), signal)
+      .catch(e => {
+        if (e.cancelled) throw e;
+        log('⚠️ Groq JSON indisponible — bascule sur Gemini pour la synthèse…', 'warning');
+        return callGeminiJSON(buildSynthesisDataPrompt(periodStr, searchResults), signal);
+      })
       .then(data => { dispatch({ type: 'SET_SYNTHESIS_DATA', data }); return data; })
       .catch(e => { if (!e.cancelled) throw e; return null; });
 
