@@ -164,6 +164,14 @@ function reducer(state, action) {
     case 'SET_ANALYSIS_ERROR':
       return { ...state, analysisError: { source: action.source, message: action.message } };
 
+    case 'FAIL_WORKFLOW':
+      return {
+        ...state,
+        globalStatus: 'error',
+        analysisError: { source: action.source, message: action.message },
+        currentStep: null,
+      };
+
     case 'COMPLETE_WORKFLOW':
       return { ...state, globalStatus: 'success', progress: 100, lastRun: Date.now(), currentStep: null };
 
@@ -253,15 +261,10 @@ async function runAgent(agentId, dispatch, signal, period) {
     dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'running', duration: Date.now() - t0 });
   }, 100);
 
-  const tavilyKey = import.meta.env.VITE_TAVILY_API_KEY;
-  const groqKey   = import.meta.env.VITE_GROQ_API_KEY;
-  const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
-  // Tavily: real web search for collector agent only
-  const useTavily = tavilyKey && agentId === 'collector';
-  // Agents synthesis & dashboard prefer Groq; all others prefer Gemini
-  const useGroq   = groqKey && def.geminiPrompt && (agentId === 'synthesis' || agentId === 'dashboard');
-  const useGemini = geminiKey && def.geminiPrompt && !useGroq;
+  // Tavily for collector; Groq for synthesis + dashboard; Gemini for pdf
+  const useTavily = agentId === 'collector';
+  const useGroq   = def.geminiPrompt && (agentId === 'synthesis' || agentId === 'dashboard');
+  const useGemini = def.geminiPrompt && !useTavily && !useGroq;
 
   let searchResults = null;
 
@@ -269,91 +272,59 @@ async function runAgent(agentId, dispatch, signal, period) {
     if (useTavily) {
       // ── Mode ⓪ : Tavily real web search (collector) ───────────
       log('🌐 Tavily Search API — recherche web réelle sur 22 analystes macro…', 'info');
-
-      try {
-        searchResults = await searchAllAnalysts(period, signal, (result) => {
-          const { analyst, results, status, error } = result;
-          if (status === 'found') {
-            const best   = results[0];
-            let   domain = '';
-            try { domain = new URL(best.url).hostname.replace('www.', ''); } catch {}
-            const pubDate = best.published_date
-              ? new Date(best.published_date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-              : 'date inconnue';
-            log(`✅ [${analyst.id}/22] ${analyst.name} — "${best.title.slice(0, 55)}…" · ${domain} · 📅 ${pubDate}`, 'success');
-          } else if (status === 'error') {
-            log(`⚠️ [${analyst.id}/22] ${analyst.name} — ${error ?? 'erreur réseau'} · mode dégradé`, 'warning');
-          } else {
-            log(`❌ [${analyst.id}/22] ${analyst.name} — Aucune publication dans la période sélectionnée`, 'error');
-          }
-        });
-
-        const found    = searchResults.filter(r => r.status === 'found').length;
-        const notFound = searchResults.filter(r => r.status === 'not_found').length;
-        const errors   = searchResults.filter(r => r.status === 'error').length;
-        log(`📊 Tally: ${found} trouvées · ${errors} erreurs · ${notFound} non trouvées · 0 hallucinations`, 'info');
-
-      } catch (tavilyErr) {
-        if (tavilyErr.cancelled) throw tavilyErr;
-        log(`⚠️ Tavily error: ${tavilyErr.message} — simulation mode`, 'warning');
-        dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'tavily', message: tavilyErr.message });
-        await runSimulation(def, dispatch, signal);
-        searchResults = null;
-      }
+      searchResults = await searchAllAnalysts(period, signal, (result) => {
+        const { analyst, results, status, error } = result;
+        if (status === 'found') {
+          const best   = results[0];
+          let   domain = '';
+          try { domain = new URL(best.url).hostname.replace('www.', ''); } catch {}
+          const pubDate = best.published_date
+            ? new Date(best.published_date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            : 'date inconnue';
+          log(`✅ [${analyst.id}/22] ${analyst.name} — "${best.title.slice(0, 55)}…" · ${domain} · 📅 ${pubDate}`, 'success');
+        } else if (status === 'error') {
+          log(`⚠️ [${analyst.id}/22] ${analyst.name} — ${error ?? 'erreur réseau'} · mode dégradé`, 'warning');
+        } else {
+          log(`❌ [${analyst.id}/22] ${analyst.name} — Aucune publication dans la période sélectionnée`, 'error');
+        }
+      });
+      const found    = searchResults.filter(r => r.status === 'found').length;
+      const notFound = searchResults.filter(r => r.status === 'not_found').length;
+      const errors   = searchResults.filter(r => r.status === 'error').length;
+      log(`📊 Tally: ${found} trouvées · ${errors} erreurs · ${notFound} non trouvées · 0 hallucinations`, 'info');
 
     } else if (useGroq) {
       // ── Mode ① : Groq API (synthesis + dashboard) ─────────────
       log('🤖 Groq API (llama-3.3-70b-versatile) — generating execution trace…', 'info');
-
-      let responseText;
-      try {
-        responseText = await callGroq(def.geminiPrompt, signal);
-      } catch (apiErr) {
-        if (apiErr.cancelled) throw apiErr;
-        log(`⚠️ Groq API error: ${apiErr.message} — falling back to simulation`, 'warning');
-        responseText = null;
-      }
-
-      if (responseText) {
-        const lines = responseText.split('\n').map(l => l.trim()).filter(Boolean);
-        for (const line of lines) {
-          if (signal.cancelled) return;
-          log(line, inferLogType(line));
-          await sleepC(150, signal);
-        }
-      } else {
-        await runSimulation(def, dispatch, signal);
+      const responseText = await callGroq(def.geminiPrompt, signal);
+      const lines = responseText.split('\n').map(l => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        if (signal.cancelled) return;
+        log(line, inferLogType(line));
+        await sleepC(150, signal);
       }
 
     } else if (useGemini) {
-      // ── Mode ② : Gemini API (collector + pdf) ─────────────────
+      // ── Mode ② : Gemini API (pdf) ─────────────────────────────
       log('🤖 Gemini API (gemini-2.0-flash) — generating execution trace…', 'info');
-
-      let responseText;
-      try {
-        responseText = await callGemini(def.geminiPrompt, signal);
-      } catch (apiErr) {
-        if (apiErr.cancelled) throw apiErr;
-        log(`⚠️ Gemini API error: ${apiErr.message} — falling back to simulation`, 'warning');
-        responseText = null;
-      }
-
-      if (responseText) {
-        const lines = responseText.split('\n').map(l => l.trim()).filter(Boolean);
-        for (const line of lines) {
-          if (signal.cancelled) return;
-          log(line, inferLogType(line));
-          await sleepC(150, signal);
-        }
-      } else {
-        await runSimulation(def, dispatch, signal);
+      const responseText = await callGemini(def.geminiPrompt, signal);
+      const lines = responseText.split('\n').map(l => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        if (signal.cancelled) return;
+        log(line, inferLogType(line));
+        await sleepC(150, signal);
       }
 
     } else {
-      // ── Mode ③ : Simulation ────────────────────────────────────
-      await runSimulation(def, dispatch, signal);
+      throw new Error(`Clé API manquante pour l'agent ${def.label}. Vérifiez votre fichier .env.`);
     }
 
+  } catch (e) {
+    if (!e.cancelled) {
+      dispatch({ type: 'UPDATE_AGENT', agent: agentId, status: 'error', duration: Date.now() - t0 });
+      log(`❌ ${def.label} — ${e.message}`, 'error');
+    }
+    throw e;
   } finally {
     clearInterval(durationInterval);
   }
@@ -490,29 +461,19 @@ async function runWorkflow(dispatch, signal, period) {
 
     // ── Étape 1 : Collecte des sources ───────────────────────────
     upd(5, 'Étape 1/4 — macro_research_collector');
-    const tavilyKey = import.meta.env.VITE_TAVILY_API_KEY;
-    log(`Étape 1 → appel macro_research_collector — ${tavilyKey ? 'Tavily web search' : 'simulation'} — période : ${periodStr}`);
+    log(`Étape 1 → appel macro_research_collector — Tavily web search — période : ${periodStr}`);
     const searchResults = await runAgent('collector', dispatch, signal, period);
     const foundCount = searchResults ? searchResults.filter(r => r.status === 'found').length : 14;
-    log(`✅ [QC Étape 1] research_data stocké — ${foundCount}/22 sources ${tavilyKey ? 'trouvées web' : 'analysées'} ≥ 2 ✓`, 'success');
+    log(`✅ [QC Étape 1] research_data stocké — ${foundCount}/22 sources trouvées web ≥ 2 ✓`, 'success');
 
     // ── Étape 2 : Groq — analyse comparative + données JSON ─────────
     upd(32, 'Étape 2/4 — comparative_synthesis_agent (Groq)');
-    const groqKey = import.meta.env.VITE_GROQ_API_KEY;
-    log(`Étape 2 → Groq analyse croisée — ${groqKey ? 'llama-3.3-70b-versatile' : 'simulation'} — input : ${foundCount} sources Tavily`);
+    log(`Étape 2 → Groq analyse croisée — llama-3.3-70b-versatile — input : ${foundCount} sources Tavily`);
 
     // Lance en parallèle : logs d'exécution (Groq) + vraie synthèse JSON (Groq)
-    const synthesisDataPromise = groqKey
-      ? callGroqJSON(buildSynthesisDataPrompt(periodStr, searchResults), signal)
-          .then(data => { dispatch({ type: 'SET_SYNTHESIS_DATA', data }); return data; })
-          .catch(e => {
-            if (!e.cancelled) {
-              console.warn('Groq JSON synthesis error:', e.message);
-              dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'groq', message: e.message });
-            }
-            return null;
-          })
-      : (dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'groq', message: 'Clé VITE_GROQ_API_KEY manquante ou invalide.' }), Promise.resolve(null));
+    const synthesisDataPromise = callGroqJSON(buildSynthesisDataPrompt(periodStr, searchResults), signal)
+      .then(data => { dispatch({ type: 'SET_SYNTHESIS_DATA', data }); return data; })
+      .catch(e => { if (!e.cancelled) throw e; return null; });
 
     await Promise.all([
       runAgent('synthesis', dispatch, signal, period),
@@ -614,7 +575,7 @@ export default function App() {
       await runWorkflow(dispatch, signal, dateRange);
     } catch (e) {
       if (!e.cancelled) {
-        dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'groq', message: e.message ?? 'Erreur inattendue du pipeline.' });
+        dispatch({ type: 'FAIL_WORKFLOW', source: 'api', message: e.message ?? 'Erreur inattendue du pipeline.' });
       }
     }
   }, [state.globalStatus, dateRange, dateRangeValid]);
@@ -755,6 +716,25 @@ export default function App() {
             }}
             onViewResults={() => setView('dashboard')}
           />
+
+          {state.globalStatus === 'error' && state.analysisError && (
+            <div style={{
+              background: '#FEF2F2',
+              border: '1.5px solid #FECACA',
+              borderRadius: 12,
+              padding: isMobile ? '16px' : '20px 24px',
+            }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#991B1B', marginBottom: 6 }}>
+                Erreur de clé API
+              </div>
+              <div style={{ fontSize: 13, color: '#B91C1C', lineHeight: 1.6 }}>
+                {state.analysisError.message}
+              </div>
+              <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 8 }}>
+                Vérifiez votre fichier .env et rechargez la page, puis réessayez.
+              </div>
+            </div>
+          )}
 
           <PipelineChart agents={state.agents} />
 
