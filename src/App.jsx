@@ -431,6 +431,10 @@ RETOURNE UNIQUEMENT CE JSON (sans markdown):
   "divergences": [{"theme":"...","posA":"Position haussière précise","authorsA":["NomFirme"],"posB":"Position baissière précise","authorsB":["NomFirme"],"arbitrage":"Recommandation CIO concrète"}],
   "ideas": [{"title":"Titre concis","author":"PrénomNom","firm":"Firme","rationale":"2 phrases précises avec rationale chiffré","conviction":"Élevée|Moyenne","assetClass":"Classe d'actif"}],
   "risks": [{"risk":"Nom du risque","severity":"Élevé|Moyen","authors":["NomCourt"],"count":N,"impact":"Impact concret chiffré"}],
+  "catalysts": [
+    {"type":"Positif","title":"Titre court du catalyseur","body":"2 phrases décrivant le scénario et son impact concret sur les marchés si ce catalyseur se matérialise durant la période"},
+    (exactement 2 catalyseurs Positif et 2 catalyseurs Négatif, dérivés des risques et divergences identifiés pour la période)
+  ],
   "analysts": [
     {"name":"Jurrien Timmer","firm":"Fidelity","sentiment":"Bullish|Bearish|Neutre|Prudent","keyTakeaway":"1 phrase précise en français","actionsUS":"Bull|Bear|Neutre","actionsIntl":"Bull|Bear|Neutre","oblig":"Bull|Bear|Neutre","credit":"Bull|Bear|Neutre","matieres":"Bull|Bear|Neutre","crypto":"Bull|Bear|Neutre"},
     (répéter pour les 14 analystes dans l'ordre)

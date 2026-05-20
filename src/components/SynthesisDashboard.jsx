@@ -106,6 +106,12 @@ const FALLBACK = {
       assetClass: 'Actions Marchés Émergents',
     },
   ],
+  catalysts: [
+    { type: 'Positif', title: 'Pivot Fed surprise',        body: "Toute inflexion dovish non anticipée (baisse > 25bp) pourrait déclencher un rally violent sur les actifs risqués — particulièrement actions tech et crédit HY." },
+    { type: 'Positif', title: 'Désescalade géopolitique',  body: "Un accord de cessez-le-feu Moyen-Orient ou réduction des tensions Chine/Taiwan réduirait la prime de risque et soutiendrait une revalorisation des actifs risqués." },
+    { type: 'Négatif', title: 'Déception earnings Mag7',   body: "Un ou plusieurs résultats décevants sur la monétisation IA (Nvidia, Microsoft, Alphabet) déclencherait une correction rapide du marché avec contagion indice." },
+    { type: 'Négatif', title: 'Crise dette souveraine US', body: "Montée des spreads ou dégradation note → fuite vers qualité, hausse brutale taux longs, stress systémique sur le refinancement corporate 2026-2027." },
+  ],
   risks: [
     {
       risk:     'Concentration Mag7 — déception sur la monétisation IA',
@@ -517,12 +523,7 @@ function IdeasTab({ data, bp }) {
 /* ── Tab: Risques & Catalyseurs ───────────────────────────────────── */
 function RisksTab({ data, bp }) {
   const { isMobile } = bp;
-  const catalysts = [
-    { type: 'Positif', title: 'Pivot Fed surprise',        body: "Toute inflexion dovish non anticipée (baisse > 25bp) pourrait déclencher un rally violent sur les actifs risqués — particulièrement actions tech et crédit HY." },
-    { type: 'Positif', title: 'Désescalade géopolitique',  body: "Un accord de cessez-le-feu Moyen-Orient ou réduction des tensions Chine/Taiwan réduirait la prime de risque et soutiendrait une revalorisation des actifs risqués." },
-    { type: 'Négatif', title: 'Déception earnings Mag7',   body: "Un ou plusieurs résultats décevants sur la monétisation IA (Nvidia, Microsoft, Alphabet) déclencherait une correction rapide du marché avec contagion indice." },
-    { type: 'Négatif', title: 'Crise dette souveraine US', body: "Montée des spreads ou dégradation note → fuite vers qualité, hausse brutale taux longs, stress systémique sur le refinancement corporate 2026-2027." },
-  ];
+  const catalysts = data.catalysts || [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
