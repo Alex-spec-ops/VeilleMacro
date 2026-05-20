@@ -420,11 +420,14 @@ async function runAgent(agentId, dispatch, signal, period) {
             const best   = results[0];
             let   domain = '';
             try { domain = new URL(best.url).hostname.replace('www.', ''); } catch {}
-            log(`✅ [${analyst.id}/22] ${analyst.name} — "${best.title.slice(0, 55)}…" · ${domain}`, 'success');
+            const pubDate = best.published_date
+              ? new Date(best.published_date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+              : 'date inconnue';
+            log(`✅ [${analyst.id}/22] ${analyst.name} — "${best.title.slice(0, 55)}…" · ${domain} · 📅 ${pubDate}`, 'success');
           } else if (status === 'error') {
             log(`⚠️ [${analyst.id}/22] ${analyst.name} — ${error ?? 'erreur réseau'} · mode dégradé`, 'warning');
           } else {
-            log(`❌ [${analyst.id}/22] ${analyst.name} — Aucune publication web trouvée`, 'error');
+            log(`❌ [${analyst.id}/22] ${analyst.name} — Aucune publication dans la période sélectionnée`, 'error');
           }
         });
 

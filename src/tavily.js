@@ -173,11 +173,11 @@ export async function searchAnalyst(analyst, periodStart, periodEnd, signal) {
 
     const data = await res.json();
 
-    // Filter by score AND strict date range [periodStart, periodEnd]
+    // Keep only results with a confirmed published_date within [periodStart, periodEnd]
     const results = (data.results || [])
       .filter(r => r.score > 0.2)
       .filter(r => {
-        if (!r.published_date) return true; // No date metadata → keep (can't exclude)
+        if (!r.published_date) return false; // No date → cannot confirm it's in range
         const pubMs = new Date(r.published_date).getTime();
         return pubMs >= periodStartMs && pubMs <= periodEndMs;
       });
