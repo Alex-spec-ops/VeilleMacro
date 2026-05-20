@@ -26,223 +26,80 @@ const AGENTS = {
     id: 'collector', name: 'macro_research_collector',
     label: 'Collecte Sources', emoji: '🔍', color: C.coral,
     simulatedDuration: 48_000,
-    desc: 'Collecte les publications récentes de 22 stratégistes macro via web_search & web_fetch. Analyse structurée JSON par source.',
+    desc: 'Collecte les publications récentes de 22 stratégistes macro via Tavily Search API.',
     logs: [
-      // ── Sources 1–3 (high priority) ──────────────────────────────
-      '🔍 [1/22] web_search → Jurrien Timmer · Fidelity Insights (timmer-global-macro-view)…',
-      '✅ [1/22] Timmer "Broadening Out" found — 28/04/2026 · web_fetch OK (4 200 tokens)',
-      '🔍 [2/22] web_search → Michael Cembalest · EOTM (jpmorgan.com/am/eotm)…',
-      '✅ [2/22] EOTM "The Debt Problem" found — 22/04/2026 · web_fetch OK (6 800 tokens)',
-      '🔍 [3/22] web_search → Jeremy Grantham · GMO Quarterly Letter (gmo.com/europe)…',
-      '❌ [3/22] No GMO publication in the requested period — added to sources_not_found',
-      // ── Sources 4–8 ───────────────────────────────────────────────
-      '🔍 [4/22] web_search → Marko Papic · BCA GeoMacro (bcaresearch.com)…',
-      '✅ [4/22] BCA GeoMacro Strategy found — 25/04/2026 · web_fetch OK (3 100 tokens)',
-      '🔍 [5/22] web_search → François Trahan · BMO Capital (capitalmarkets.bmo.com)…',
-      '⚠️ [5/22] BMO paywall detected — partial metadata only (title + date extracted)',
-      '🔍 [6/22] web_search → Howard Marks · Oaktree Memo (oaktreecapital.com/insights)…',
-      '✅ [6/22] Marks Memo "On Bubble Watch" found — 15/04/2026 · web_fetch OK (5 400 tokens)',
-      '🔍 [7/22] web_search → Albert Edwards · SG Global Strategy Weekly (sgmarkets.com)…',
-      '✅ [7/22] Edwards "Ice Age Still Intact" found — 24/04/2026 · web_fetch OK (2 900 tokens)',
-      '🔍 [8/22] web_search → Bill Ackman · Pershing Square letters (pershingsquareholdings.com)…',
-      '❌ [8/22] No shareholder letter in period — added to sources_not_found',
-      // ── Sources 9–15 (batch) ──────────────────────────────────────
-      '🔍 [9-15/22] Batch scan: Elliott · Burniske · Asness · Saravelos · Currie · Kelly · Summers…',
-      '✅ [11/22] Cliff Asness · AQR "Value Is Still Cheap" — 20/04/2026',
-      '✅ [12/22] George Saravelos · DB FX note — 26/04/2026 (via x.com/GSaravelos)',
-      '✅ [15/22] Larry Summers · Bloomberg op-ed — 24/04/2026',
-      '❌ [9/22] Bob Elliott — no public post in period · [14/22] Kevin Kelly behind paywall',
-      // ── Sources 16–22 (batch) ─────────────────────────────────────
-      '🔍 [16-22/22] Batch scan: Mauboussin · El-Erian · Roubini · Andurand · Druckenmiller · Buffett · Pozsar…',
-      '✅ [17/22] Mohamed El-Erian · Bloomberg "Fed Credibility" — 27/04/2026',
-      '✅ [18/22] Nouriel Roubini · Project Syndicate — 21/04/2026',
-      '✅ [21/22] Warren Buffett · BRK Annual Letter (berkshirehathaway.com) — 12/04/2026',
-      '❌ [22/22] Zoltan Pozsar — account suspended · no accessible publication',
-      // ── Final tally ───────────────────────────────────────────────
-      '📊 Tally: 14 found · 3 partial (paywall) · 5 not found · 0 hallucinated',
+      '⚠️ Clé VITE_TAVILY_API_KEY manquante — mode simulation activé',
+      '🔍 Scan des 22 analystes macro en cours…',
+      '⚠️ Aucune donnée web réelle disponible sans clé Tavily',
+      '📊 Mode simulation — configurez VITE_TAVILY_API_KEY pour une collecte réelle',
     ],
-    doneMsg: '✅ Collector completed — 14/22 sources · 3 partial · period 01/04–28/04/2026',
-    geminiPrompt: `Tu es l'agent macro_research_collector. Simule une trace d'exécution réaliste de recherche de publications récentes pour la période 01/04/2026 – 28/04/2026.
-Génère exactement 24 lignes de log en français. Chaque ligne DOIT commencer par un de ces emojis : 🔍 ✅ ❌ ⚠️ 📊
-Cherche dans cet ordre : Jurrien Timmer (Fidelity), Michael Cembalest (JPM EOTM), Jeremy Grantham (GMO), Marko Papic (BCA), François Trahan (BMO), Howard Marks (Oaktree), Albert Edwards (SG), Bill Ackman (Pershing Square), Bob Elliott (Unlimited Funds), Chris Burniske (Placeholder VC), Cliff Asness (AQR), George Saravelos (Deutsche Bank), Jeffrey Currie (Carlyle), Kevin Kelly (Delphi Digital), Larry Summers (Harvard), Michael Mauboussin (Morgan Stanley), Mohamed El-Erian (Bloomberg), Nouriel Roubini (Project Syndicate), Pierre Andurand (Andurand Capital), Stanley Druckenmiller (Duquesne), Warren Buffett (Berkshire), Zoltan Pozsar.
-Format des lignes trouvées : ✅ [X/22] NOM "Titre publication" — JJ/MM/AAAA · web_fetch OK (N tokens)
-Format des lignes non trouvées : ❌ [X/22] Raison courte — added to sources_not_found
-Regroupe les sources 7-15 en scan batch (1-2 lignes).
-Termine par : 📊 Tally: X found · Y partial · Z not found · 0 hallucinated
-Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
+    doneMsg: '⚠️ Collector — mode simulation (pas de clé Tavily)',
   },
   synthesis: {
     id: 'synthesis', name: 'comparative_synthesis_agent',
     label: 'Analyse Comparative', emoji: '⚖️', color: C.blue,
     simulatedDuration: 28_000,
-    desc: 'Synthèse comparative croisée de qualité CIO : convergences ≥3 auteurs, divergences, nouvelles idées, risques agrégés.',
+    desc: 'Analyse comparative croisée via Groq : convergences, divergences, nouvelles idées, risques agrégés.',
     logs: [
-      // ── Chargement de l'input ─────────────────────────────────────
-      '📥 Input received — collector JSON · 14 sources_analyzed · 5 sources_not_found',
-      '🔄 Parsing asset_class_positioning for all 14 sources…',
-      '✅ Positioning matrix built (14 × 6 asset classes)',
-
-      // ── Section 1 : Convergences ──────────────────────────────────
-      '🔎 [Convergences] Scanning 10 priority themes…',
-      '✅ [Theme 1] Valorisations US — consensus Bear · 6 auteurs alignés (Timmer · Marks · Asness · Grantham partial · Edwards · Roubini)',
-      '✅ [Theme 2] Géopolitique / risque Chine-Taiwan — consensus Risk-off · 4 auteurs (Cembalest · Papic · Saravelos · El-Erian)',
-      '✅ [Theme 3] Actions internationales EAFE/EM — consensus Bull · 4 auteurs (Timmer · Asness · Papic · El-Erian)',
-      '✅ [Theme 4] IA / Hyperscalers — consensus Neutre-prudent · 3 auteurs (Cembalest · Mauboussin · Timmer)',
-      '✅ [Theme 5] Politique Fed trop restrictive — consensus critique · 3 auteurs (Summers · El-Erian · Roubini)',
-      '⚠️ [Theme 6] Bitcoin/Crypto — données insuffisantes (< 2 sources) · skipped per CRITICAL_RULES',
-
-      // ── Section 2 : Divergences ───────────────────────────────────
-      '🔎 [Divergences] Identifying explicit contradictions…',
-      '✅ [Div. 1] Crédit HY : Marks (opportuniste / Bull) ↔ Edwards (Ice Age Bear / spread compression insoutenable)',
-      '✅ [Div. 2] Récession 2026 : Roubini · Summers (probabilité élevée 60 %) ↔ Timmer · Papic (soft landing, pas de récession)',
-      '✅ [Div. 3] Dollar : Saravelos (USD faiblesse structurelle) ↔ El-Erian (USD résilience sous-estimée)',
-
-      // ── Section 3 : Nouvelles idées ───────────────────────────────
-      '💡 [Ideas] Extracting non-mainstream / counter-intuitive ideas…',
-      '💡 [Idea 1] Timmer — Bitcoin comme couverture dépréciation monétaire, cycle 4 ans bull confirmé',
-      '💡 [Idea 2] Cembalest — Power infrastructure (data centers / électricité) = meilleur proxy IA vs Mag7',
-      '💡 [Idea 3] Asness — Value factor en Europe : décote historique vs croissance US, mean reversion probable',
-      '💡 [Idea 4] Papic — Géopolitique comme opportunité (pas seulement risque) : Inde, Brésil, ASEAN',
-
-      // ── Section 4 : Risques agrégés ───────────────────────────────
-      '⚠️ [Risks] Aggregating risks mentioned by ≥ 2 authors…',
-      '⚠️ [Risk 1] ÉLEVÉ — Concentration Mag7 · 5 auteurs · risk of mean reversion brutal',
-      '⚠️ [Risk 2] ÉLEVÉ — Déficit fiscal US non soutenable · 4 auteurs · impact taux longs',
-      '⚠️ [Risk 3] MOYEN — Récession consommation US · 3 auteurs · leading indicators se retournent',
-      '⚠️ [Risk 4] MOYEN — Escalade géopolitique Chine/Taiwan · 3 auteurs · choc supply chains',
-
-      // ── Finalisation ──────────────────────────────────────────────
-      '📊 Summary: 5 convergences · 3 divergences · 4 new ideas · 4 aggregated risks',
-      '✅ JSON synthesis_output serialized — general_sentiment: Mitigé (risk-on sélectif)',
+      '⚠️ Clé VITE_GROQ_API_KEY manquante — mode simulation activé',
+      '🔄 Analyse comparative en cours…',
+      '⚠️ Aucune analyse réelle disponible sans clé Groq',
+      '📊 Mode simulation — configurez VITE_GROQ_API_KEY pour une analyse réelle',
     ],
-    doneMsg: '✅ Synthesis completed — 5 convergences · 3 divergences · 4 ideas · 4 risks',
-    geminiPrompt: `Tu es l'agent comparative_synthesis_agent. Simule une trace d'exécution réaliste d'analyse comparative de 14 publications macro institutionnelles.
-Génère exactement 26 lignes de log en français. Chaque ligne DOIT commencer par : 📥 🔄 ✅ ❌ ⚠️ 💡 📊
-Phases à simuler :
-1. Parsing matrice positionnement (14 sources × 6 classes d'actifs)
-2. Convergences stratégiques (thèmes : valorisations US, géopolitique Chine/Taiwan, actions EAFE/EM, IA/hyperscalers, politique Fed) — indiquer les auteurs alignés (≥3 par convergence)
-3. Divergences notables (crédit HY, récession 2026, dollar US) — positions contradictoires explicites avec auteurs
-4. Nouvelles idées d'investissement contre-intuitives (Bitcoin comme hedge, power infrastructure vs Mag7, Value Europe, géopolitique comme opportunité)
-5. Risques agrégés (≥2 auteurs) avec sévérité ÉLEVÉ/MOYEN
-6. JSON synthesis_output sérialisé avec general_sentiment
-Auteurs disponibles : Timmer, Cembalest, Papic, Marks, Edwards, Asness, Saravelos, Summers, El-Erian, Roubini, Buffett, Mauboussin, Trahan, Andurand.
-Termine par : 📊 Summary: X convergences · Y divergences · Z new ideas · W aggregated risks
+    doneMsg: '⚠️ Synthesis — mode simulation (pas de clé Groq)',
+    geminiPrompt: `Tu es l'agent comparative_synthesis_agent. Génère une trace d'exécution d'analyse comparative basée sur les données Tavily fournies.
+Génère entre 10 et 20 lignes de log en français. Chaque ligne DOIT commencer par : 📥 🔄 ✅ ⚠️ 💡 📊
+Phases :
+1. Réception et parsing des données collectées (sources trouvées / non trouvées)
+2. Construction de la matrice de positionnement par classe d'actif
+3. Identification des convergences (≥3 auteurs alignés)
+4. Identification des divergences explicites entre auteurs
+5. Extraction des idées contre-intuitives
+6. Agrégation des risques (≥2 auteurs) avec sévérité
+7. Sérialisation du JSON synthesis_output
 Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
   dashboard: {
     id: 'dashboard', name: 'dashboard_generator_agent',
-    label: 'Dashboard TSX', emoji: '📊', color: C.teal,
+    label: 'Dashboard', emoji: '📊', color: C.teal,
     simulatedDuration: 32_000,
-    desc: 'Génère deux livrables : composant TSX shadcn/ui (Frame Dust) + fichier HTML autonome identique pixel-perfect.',
+    desc: 'Génère le rapport de synthèse à partir des données Groq.',
     logs: [
-      // ── Parsing input ─────────────────────────────────────────────
-      '📥 Input received — synthesis_data (5 sections) + individual_analyses (14 auteurs)',
-      '🔄 Building tab inventory: "Synthèse" · "Dashboard" · 14 author tabs (priority order)…',
-      '✅ Tab plan validated — 16 tabs total · Timmer [1] … Buffett [14]',
-
-      // ── Livrable 1 : TSX Frame Dust ───────────────────────────────
-      '📝 [TSX] Scaffolding MacroSynthAIDashboard component…',
-      '📝 [TSX] Imports: React · useState · Card · CardContent · CardHeader · CardTitle · Badge',
-
-      // Header
-      '📝 [TSX][Header] "MacroSynthAI — Note de Recherche CIO" · badges "14 sources analysées" + "Usage interne"',
-
-      // Tab navigation
-      '📝 [TSX][Nav] Generating tab navigation — rounded-none · border-b-2 · 16 tabs…',
-
-      // Onglet Synthèse
-      '📝 [TSX][Tab:Synthèse] Section Vue d\'ensemble — macro_context + Badge sentiment "Mitigé" (variant=secondary)',
-      '📝 [TSX][Tab:Synthèse] Section Convergences — tableau 5 lignes × 4 colonnes (Thème·Consensus·Auteurs·Implication)',
-      '📝 [TSX][Tab:Synthèse] Section Divergences — tableau 3 lignes × 6 colonnes (Theme·PosA·AuteursA·PosB·AuteursB·Arbitrage)',
-      '📝 [TSX][Tab:Synthèse] Section Nouvelles idées — <ol> 4 items · format bold-idea + italic-rationale + Badge auteur',
-      '📝 [TSX][Tab:Synthèse] Section Risques agrégés — <ul> 4 items · sévérité 🔴🟠 + badge "Mentionné par X auteurs"',
-
-      // Onglet Dashboard (matrice)
-      '📝 [TSX][Tab:Dashboard] Building 11×16 positioning matrix — 11 thèmes × (14 auteurs + col Consensus)…',
-      '📝 [TSX][Tab:Dashboard] Mapping asset_class_positioning → stances (Bull🟢 · Neutre🟡 · Bear🔴 · —)…',
-      '📝 [TSX][Tab:Dashboard] Computing consensus column — ≥50% Bull→🟢 · ≥50% Bear→🔴 · else→🟡…',
-      '✅ [TSX][Tab:Dashboard] Matrix complete — tooltips title= on all stance cells',
-
-      // Onglets auteurs
-      '📝 [TSX][Author tabs] Generating 14 author tabs (5 sections each: header · résumé · key_takeaways · positioning · contrarian)…',
-      '✅ [TSX][Author tabs] 14 × 5 = 70 Card sections generated · rounded-none · p-6 uniform padding',
-
-      // Finalisation TSX
-      '✅ [TSX] MacroSynthAIDashboard.tsx complete — 1 843 lines · syntax validated',
-      '🚀 [TSX] Deploying to Dust Frame…',
-      '✅ [TSX] Frame Dust live — interactive render confirmed',
-
-      // ── Livrable 2 : HTML autonome ────────────────────────────────
-      '📝 [HTML] Scaffolding macrosynth_dashboard.html — CDN React 18 · ReactDOM · Babel standalone · Tailwind CDN',
-      '📝 [HTML] Defining shadcn/ui polyfills: Card · CardHeader · CardTitle · CardContent · Badge (rounded-none)',
-      '📝 [HTML] Injecting JSX from Frame Dust into <script type="text/babel">…',
-      '📝 [HTML] ReactDOM.createRoot(#root).render(MacroSynthAIDashboard)…',
-      '✅ [HTML] macrosynth_dashboard.html generated — 2 107 lines · no external deps at runtime',
-      '✅ [HTML] file_generation tool called — file attached to conversation',
+      '⚠️ Clé VITE_GROQ_API_KEY manquante — mode simulation activé',
+      '🔄 Génération du dashboard en cours…',
+      '⚠️ Aucune donnée réelle disponible sans clé Groq',
+      '📊 Mode simulation — configurez VITE_GROQ_API_KEY pour un dashboard réel',
     ],
-    doneMsg: '✅ Dashboard deployed — TSX 1 843 lines (Dust Frame) + HTML 2 107 lines (standalone)',
-    geminiPrompt: `Tu es l'agent dashboard_generator_agent. Simule une trace d'exécution réaliste de génération d'un dashboard React TSX shadcn/ui pour une note de recherche macro.
-Génère exactement 28 lignes de log en français. Chaque ligne DOIT commencer par : 📥 📝 ✅ ⚙️ 🚀 🎨
-Phases à simuler :
-1. Parsing input : synthesis_data (5 sections) + 14 individual_analyses
-2. Plan de 16 onglets (Synthèse · Dashboard · 14 onglets auteurs dans l'ordre de priorité)
-3. Génération TSX : imports (React · useState · Card · Badge), Header, navigation tabs (rounded-none · border-b-2)
-4. Onglet Synthèse : 5 Card sections (overview · convergences 5 lignes · divergences 3 lignes · nouvelles idées ol · risques ul)
-5. Onglet Dashboard : matrice 11×16 positionnement (Bull🟢/Neutre🟡/Bear🔴) avec consensus column et tooltips
-6. 14 onglets auteurs (5 sections chacun : header · résumé · key_takeaways · positioning table · contrarian signals)
-7. Validation syntaxe TSX · déploiement Dust Frame
-8. Génération HTML autonome (CDN React 18 · Babel · Tailwind · polyfills shadcn/ui)
-Termine par : ✅ [HTML] macrosynth_dashboard.html generated — 2 107 lines · no external deps at runtime
+    doneMsg: '⚠️ Dashboard — mode simulation (pas de clé Groq)',
+    geminiPrompt: `Tu es l'agent dashboard_generator_agent. Génère une trace d'exécution de construction du dashboard de synthèse macro.
+Génère entre 10 et 16 lignes de log en français. Chaque ligne DOIT commencer par : 📥 📝 ✅ ⚙️ 🚀
+Phases :
+1. Réception des données de synthèse Groq (convergences, divergences, idées, risques, matrice)
+2. Construction de la matrice de positionnement par analyste et classe d'actif
+3. Calcul du consensus par thème
+4. Assemblage des sections du rapport (vue d'ensemble, convergences, divergences, idées, risques)
+5. Rendu final du dashboard
 Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
   pdf: {
     id: 'pdf', name: 'pdf_report_generator',
     label: 'Rapport PDF', emoji: '📄', color: C.orange,
     simulatedDuration: 26_000,
-    desc: 'Génère un PDF exécutif 3 pages A4 via ReportLab (Python) : dashboard thématique, convergences, risques agrégés.',
+    desc: 'Génère le rapport PDF à partir des données de synthèse.',
     logs: [
-      // ── Étape 1 : Préparation des données ─────────────────────────
-      '📥 Input received — synthesis_data (14 sources) + individual_analyses array',
-      '🔄 [Étape 1] Extracting Page 1 data: overview · sentiment · positioning matrix (8 classes × 14 auteurs)…',
-      '🔄 [Étape 1] Extracting Page 2 data: convergences (top 4) · divergences (top 3) · new ideas (top 5)…',
-      '🔄 [Étape 1] Extracting Page 3 data: risks sorted by severity · author grid (top 6 auteurs)…',
-      '✅ [Étape 1] Data preparation complete — 3 pages structured',
-
-      // ── Étape 2 : Génération du script Python ─────────────────────
-      '📝 [Étape 2] Scaffolding generate_pdf.py in /home/claude/…',
-      '📝 [Étape 2] Imports: reportlab.platypus · SimpleDocTemplate · Table · TableStyle · Paragraph · PageBreak',
-      '📝 [Étape 2] ParagraphStyles defined — h1:18pt · h2:14pt · h3:12pt · body:9pt TA_JUSTIFY · footer:7pt italic',
-      '📝 [Étape 2] Page 1 — Header "MacroSynthAI" · badge "14 sources institutionnelles" · sentiment "Mitigé" #d97706',
-      '📝 [Étape 2] Page 1 — Dashboard table 8×16: stances Bull🟢/Neutre🟡/Bear🔴 · initiales T·C·P·M·As·El·Ro·Bu',
-      '📝 [Étape 2] Page 2 — Convergences table 4 rows (sorted by aligned_authors count)…',
-      '📝 [Étape 2] Page 2 — Divergences table 3 rows · Nouvelles idées <ol> 5 items…',
-      '📝 [Étape 2] Page 3 — Risks list sorted Élevé→Moyen · author grid 2-col 6 auteurs…',
-      '📝 [Étape 2] Page footer callback: "MacroSynthAI — Usage interne · Page X/3" — TA_CENTER · #6b7280',
-      '✅ [Étape 2] generate_pdf.py written — 387 lines · border=0 on all TableStyles',
-
-      // ── Étape 3 : Installation & exécution ────────────────────────
-      '⚙️ [Étape 3] pip install reportlab --break-system-packages…',
-      '✅ [Étape 3] reportlab 4.2.5 installed',
-      '⚙️ [Étape 3] python3 generate_pdf.py…',
-      '✅ [Étape 3] Page 1/3 rendered — Synthèse exécutive + dashboard thématique',
-      '✅ [Étape 3] Page 2/3 rendered — Convergences · divergences · nouvelles idées',
-      '✅ [Étape 3] Page 3/3 rendered — Risques agrégés · synthèse 6 auteurs',
-
-      // ── Étapes 4 & 5 : Quality checks, move, output ───────────────
-      '🔎 [QC] Checking: 3 pages ✓ · couleurs indicateurs ✓ · aucune bordure visible ✓ · aucune donnée fictive ✓',
-      '⚙️ [Étape 4] mv /home/claude/MacroSynthAI_Report_20260429.pdf /mnt/user-data/outputs/',
-      '✅ [Étape 5] {"status":"success","pdf_path":"/mnt/user-data/outputs/MacroSynthAI_Report_20260429.pdf","pages":3,"file_size_kb":248}',
+      '📥 Réception des données de synthèse…',
+      '🔄 Préparation du rapport PDF en cours…',
+      '📝 Mise en page : vue d\'ensemble · convergences · divergences · risques…',
+      '✅ Rapport PDF structuré et prêt',
     ],
-    doneMsg: '✅ PDF generated — 3 pages A4 · 248 KB · /mnt/user-data/outputs/MacroSynthAI_Report_20260429.pdf',
-    geminiPrompt: `Tu es l'agent pdf_report_generator. Simule une trace d'exécution réaliste de génération d'un rapport PDF 3 pages A4 via ReportLab Python.
-Génère exactement 24 lignes de log en français. Chaque ligne DOIT commencer par : 📥 🔄 📝 ⚙️ ✅ 🔎
-Phases à simuler :
-1. Extraction données : Page 1 (header MacroSynthAI · overview + sentiment Mitigé · dashboard 8 classes × 14 auteurs) · Page 2 (convergences top 4 · divergences 3 · idées top 5) · Page 3 (risques sorted par sévérité · grille 2-col 6 auteurs)
-2. Génération script Python (387 lignes) : imports reportlab, ParagraphStyles (h1:18pt h2:14pt body:9pt TA_JUSTIFY footer:7pt), tableaux border=0, couleurs indicateurs Bull#16a34a/Neutre#d97706/Bear#dc2626, footer "Page X/3"
-3. pip install reportlab --break-system-packages → reportlab 4.2.5
-4. python3 generate_pdf.py : rendu Page 1/3 · Page 2/3 · Page 3/3
-5. Quality checks : 3 pages ✓ · couleurs indicateurs ✓ · aucune bordure visible ✓ · données non inventées ✓
-6. mv vers /mnt/user-data/outputs/ · JSON de retour {"status":"success","pages":3,"file_size_kb":248}
+    doneMsg: '✅ Rapport PDF généré',
+    geminiPrompt: `Tu es l'agent pdf_report_generator. Génère une trace d'exécution de génération du rapport PDF macro.
+Génère entre 8 et 12 lignes de log en français. Chaque ligne DOIT commencer par : 📥 🔄 📝 ⚙️ ✅
+Phases :
+1. Réception des données de synthèse (sentiment, convergences, divergences, risques)
+2. Structuration du rapport en sections
+3. Mise en page et rendu
+4. Finalisation du PDF
 Retourne UNIQUEMENT les lignes de log, rien d'autre.`,
   },
 };
@@ -639,32 +496,37 @@ async function runWorkflow(dispatch, signal, period) {
     const foundCount = searchResults ? searchResults.filter(r => r.status === 'found').length : 14;
     log(`✅ [QC Étape 1] research_data stocké — ${foundCount}/22 sources ${tavilyKey ? 'trouvées web' : 'analysées'} ≥ 2 ✓`, 'success');
 
-    // ── Étape 2 : Synthèse comparative ───────────────────────────
-    upd(32, 'Étape 2/4 — comparative_synthesis_agent');
-    log('Étape 2 → appel comparative_synthesis_agent — input : research_data (14 sources)…');
-    await runAgent('synthesis', dispatch, signal, period);
-    log('✅ [QC Étape 2] synthesis_data stocké — 5 convergences ✓ · 4 nouvelles idées ✓', 'success');
-
-    // ── Étapes 3 + 3B : fork parallèle ───────────────────────────
-    upd(52, 'Étapes 3+3B/4 — dashboard_generator_agent ∥ pdf_report_generator');
-    log('Étape 3 + 3B — fork parallèle → dashboard_generator_agent ∥ pdf_report_generator');
-
+    // ── Étape 2 : Groq — analyse comparative + données JSON ─────────
+    upd(32, 'Étape 2/4 — comparative_synthesis_agent (Groq)');
     const groqKey = import.meta.env.VITE_GROQ_API_KEY;
+    log(`Étape 2 → Groq analyse croisée — ${groqKey ? 'llama-3.3-70b-versatile' : 'simulation'} — input : ${foundCount} sources Tavily`);
+
+    // Lance en parallèle : logs d'exécution (Groq) + vraie synthèse JSON (Groq)
     const synthesisDataPromise = groqKey
       ? callGroqJSON(buildSynthesisDataPrompt(periodStr, searchResults), signal)
-          .then(data => dispatch({ type: 'SET_SYNTHESIS_DATA', data }))
+          .then(data => { dispatch({ type: 'SET_SYNTHESIS_DATA', data }); return data; })
           .catch(e => {
             if (!e.cancelled) {
               console.warn('Groq JSON synthesis error:', e.message);
               dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'groq', message: e.message });
             }
+            return null;
           })
-      : (dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'groq', message: 'Clé VITE_GROQ_API_KEY manquante ou invalide.' }), Promise.resolve());
+      : (dispatch({ type: 'SET_ANALYSIS_ERROR', source: 'groq', message: 'Clé VITE_GROQ_API_KEY manquante ou invalide.' }), Promise.resolve(null));
+
+    await Promise.all([
+      runAgent('synthesis', dispatch, signal, period),
+      synthesisDataPromise,
+    ]);
+    log('✅ [QC Étape 2] synthesis_data stocké — Groq analyse complète ✓', 'success');
+
+    // ── Étapes 3 + 3B : fork parallèle (données prêtes) ─────────────
+    upd(52, 'Étapes 3+3B/4 — dashboard_generator_agent ∥ pdf_report_generator');
+    log('Étape 3 + 3B — fork parallèle → dashboard_generator_agent (Groq) ∥ pdf_report_generator');
 
     await Promise.all([
       runAgent('dashboard', dispatch, signal, period),
       runAgent('pdf',       dispatch, signal, period),
-      synthesisDataPromise,
     ]);
     log('✅ [QC Étape 3] dashboard_url stocké — Frame Dust live ✓', 'success');
     log(`✅ [QC Étape 3B] pdf_path stocké — /mnt/user-data/outputs/${pdfName} ✓`, 'success');
