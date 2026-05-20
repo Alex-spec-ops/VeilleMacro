@@ -139,28 +139,30 @@ export async function searchAnalyst(analyst, periodStart, periodEnd, signal) {
   const key = import.meta.env.VITE_TAVILY_API_KEY;
   if (!key) throw new Error('VITE_TAVILY_API_KEY non défini');
 
-  const abortCtrl  = new AbortController();
+  const abortCtrl = new AbortController();
   const cancelWatch = setInterval(() => {
     if (signal?.cancelled) abortCtrl.abort();
   }, 100);
 
-  // Days back from today to cover the period + 21-day publication lag buffer
-  const daysBack = Math.ceil((Date.now() - new Date(periodStart).getTime()) / 86_400_000) + 21;
+  // Days back from today to cover the period (no extra buffer — we filter strictly by date)
+  const periodStartMs = new Date(periodStart).getTime();
+  const periodEndMs = new Date(periodEnd).getTime();
+  const daysBack = Math.ceil((Date.now() - periodStartMs) / 86_400_000);
 
   try {
     const res = await fetch(TAVILY_URL, {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      signal:  abortCtrl.signal,
+      signal: abortCtrl.signal,
       body: JSON.stringify({
-        api_key:             key,
-        query:               analyst.query,
-        include_domains:     analyst.domains,
-        search_depth:        'basic',
-        max_results:         3,
-        include_answer:      false,
+        api_key: key,
+        query: analyst.query,
+        include_domains: analyst.domains,
+        search_depth: 'basic',
+        max_results: 22,
+        include_answer: false,
         include_raw_content: false,
-        days:                Math.min(daysBack, 365),
+        days: Math.min(daysBack, 365),
       }),
     });
 
@@ -169,8 +171,17 @@ export async function searchAnalyst(analyst, periodStart, periodEnd, signal) {
       throw new Error(`Tavily ${res.status}: ${err.message ?? res.statusText}`);
     }
 
-    const data    = await res.json();
-    const results = (data.results || []).filter(r => r.score > 0.2);
+    const data = await res.json();
+
+    // Filter by score AND strict date range [periodStart, periodEnd]
+    const results = (data.results || [])
+      .filter(r => r.score > 0.2)
+      .filter(r => {
+        if (!r.published_date) return true; // No date metadata → keep (can't exclude)
+        const pubMs = new Date(r.published_date).getTime();
+        return pubMs >= periodStartMs && pubMs <= periodEndMs;
+      });
+
     return { analyst, results, status: results.length > 0 ? 'found' : 'not_found' };
 
   } catch (e) {
@@ -199,7 +210,7 @@ export async function searchAllAnalysts(period, signal, onProgress) {
       const e = new Error('cancelled'); e.cancelled = true; throw e;
     }
 
-    const batch   = ANALYSTS_LIST.slice(i, i + BATCH_SIZE);
+    const batch = ANALYSTS_LIST.slice(i, i + BATCH_SIZE);
     const results = await Promise.all(
       batch.map(a => searchAnalyst(a, period.start, period.end, signal))
     );
