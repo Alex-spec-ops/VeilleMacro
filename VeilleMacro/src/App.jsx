@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ParticleCanvas } from './components/ui/particle-canvas-1.tsx';
-import { FluidParticlesBackground } from './components/ui/fluid-particles-background.tsx';
+import AnimatedShaderBackground from './components/ui/animated-shader-background.tsx';
 import { Header } from './components/Header.jsx';
 import { OrchestratorCard } from './components/OrchestratorCard.jsx';
 import { AgentCard } from './components/AgentCard.jsx';
@@ -394,13 +394,8 @@ export function App() {
 
       {/* ── Layered background ── */}
       <div className="pointer-events-none fixed inset-0 z-0">
-        {/* Layer 1 — Fluid Perlin-noise particles */}
-        <FluidParticlesBackground
-          className="absolute inset-0"
-          particleCount={orchStatus === 'running' ? 2000 : 1200}
-          noiseIntensity={0.003}
-          particleSize={{ min: 0.5, max: orchStatus === 'running' ? 2.5 : 1.5 }}
-        />
+        {/* Layer 1 — Aurora shader (Three.js WebGL) */}
+        <AnimatedShaderBackground />
         {/* Layer 2 — WebGL coloured particles following mouse */}
         <ParticleCanvas
           maxParticles={orchStatus === 'running' ? 500 : 100}

@@ -23,6 +23,11 @@
   .border-white\/15 { border-color: rgba(255,255,255,0.15); }
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
