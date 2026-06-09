@@ -55,13 +55,19 @@ export const AGENT_CFG = {
   },
 };
 
-// Keywords to detect active step from Dust streaming tokens
-const STEP_KEYWORDS = {
-  collector: ['collecte', 'collect', 'macro_research', 'sources', 'recherche', 'publications', 'étape 1', 'step 1'],
-  synthesis: ['synthèse', 'synthesis', 'comparative', 'convergence', 'divergence', 'analystes', 'étape 2', 'step 2'],
-  dashboard: ['dashboard', 'tableau', 'scores', 'visualis', 'étape 3', 'step 3'],
-  pdf:       ['pdf', 'rapport', 'report', 'génère', 'générer', 'étape 4', 'step 4'],
-};
+// Map a Dust run_agent functionCallName (ex. "macro_research_collector__run_…")
+// back to its pipeline step, so we track the REAL active sub-agent rather than
+// guessing from token text.
+const NAME_TO_STEP = Object.fromEntries(
+  Object.entries(AGENT_CFG).map(([k, cfg]) => [cfg.name, k])
+);
+function stepFromFunctionCall(fcn) {
+  if (!fcn) return null;
+  for (const [name, k] of Object.entries(NAME_TO_STEP)) {
+    if (fcn.startsWith(name)) return k;
+  }
+  return null;
+}
 
 const fresh = () =>
   Object.fromEntries(PIPELINE.map(k => [k, { status: 'idle', duration: 0 }]));
@@ -182,17 +188,6 @@ export function App() {
     }, 500);
   }
 
-  // Detect which step is active from real Dust token text
-  function detectStepFromToken(tokenText) {
-    const lower = tokenText.toLowerCase();
-    for (const k of PIPELINE) {
-      if (STEP_KEYWORDS[k].some(kw => lower.includes(kw))) {
-        return k;
-      }
-    }
-    return null;
-  }
-
   function activateStep(k) {
     if (!startsRef.current[k]) {
       startsRef.current[k] = Date.now();
@@ -212,7 +207,19 @@ export function App() {
       });
       addLog(k, 'info', `▶ ${AGENT_CFG[k].label}`);
       setStep(AGENT_CFG[k].label);
+      setProgress(p => Math.max(p, PIPELINE.indexOf(k) * 22 + 8));
     }
+  }
+
+  // A sub-agent finished (agent_action_success) — mark its step done.
+  function completeStep(k, durMs) {
+    setAgents(p => {
+      if (p[k].status === 'success') return p;
+      const dur = durMs != null ? durMs : (startsRef.current[k] ? Date.now() - startsRef.current[k] : 0);
+      return { ...p, [k]: { status: 'success', duration: dur } };
+    });
+    addLog(k, 'success', `✓ ${AGENT_CFG[k].label}`);
+    setProgress(p => Math.max(p, (PIPELINE.indexOf(k) + 1) * 22 + 8));
   }
 
   // ── State transitions ────────────────────────────────────────────────────────
@@ -251,86 +258,65 @@ export function App() {
     addLog('orchestrator', 'error', `✗ ${msg}`);
   }
 
-  // ── SSE parser ───────────────────────────────────────────────────────────────
+  // ── Conversation polling ─────────────────────────────────────────────────────
+  // Un run complet (4 sous-agents + recherches web + email) dépasse largement les
+  // limites d'un flux SSE tenu à travers une fonction serverless (timeout client,
+  // body-timeout undici amont, maxDuration Vercel). On interroge donc l'état de la
+  // conversation par petites requêtes courtes — immunisées contre ces timeouts.
+  // Le tableau `actions` de l'agent_message expose en direct functionCallName +
+  // status + executionDurationMs, ce qui suffit à piloter les cartes.
 
-  async function parseStream(body, signal, initialConvId = null) {
-    const reader = body.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-    let text = '';
-    let convId = initialConvId;
-    let tokenBuf = '';
-    let lastTokenLog = 0;
+  async function pollConversation(convSId, signal) {
+    const POLL_MS = 6000;
+    const MAX_MS  = 20 * 60 * 1000;   // garde-fou : 20 min
+    const startedAt = Date.now();
+    const notified  = new Set();      // steps déjà loggés "en cours"
 
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    while (Date.now() - startedAt < MAX_MS) {
+      await new Promise(r => setTimeout(r, POLL_MS));
+      if (signal.aborted) return;
 
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop() ?? '';
+      let d;
+      try {
+        const r = await fetch(`/api/dust/w/${WS}/assistant/conversations/${convSId}`, { signal });
+        if (!r.ok) continue;          // hoquet transitoire — on retente au tick suivant
+        d = await r.json();
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        continue;                     // coupure réseau — on retente
+      }
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const raw = line.slice(6).trim();
-          if (raw === '[DONE]') { completeAll(text, convId); return; }
+      const msg = (d.conversation?.content ?? [])
+        .flat()
+        .reverse()
+        .find(m => m.type === 'agent_message');
+      if (!msg) continue;
 
-          try {
-            const evt = JSON.parse(raw);
-            // Dust EU wraps events: { eventId, data: { type, text, ... } }
-            // Fallback to root for older format
-            const d = evt.data ?? evt;
-            const evtType = d.type;
-
-            if (evtType === 'user_message_success') {
-              addLog('orchestrator', 'info', 'Message envoyé à Dust ✓');
-            }
-
-            if (evtType === 'agent_message_created') {
-              addLog('orchestrator', 'info', 'Réponse de l\'orchestrateur en cours…');
-            }
-
-            if (evtType === 'generation_tokens' && d.classification === 'tokens') {
-              const chunk = d.text ?? '';
-              text += chunk;
-              tokenBuf += chunk;
-
-              // Detect real active step from Dust output
-              const detectedStep = detectStepFromToken(chunk);
-              if (detectedStep) activateStep(detectedStep);
-
-              // Update progress based on real token count (rough proxy)
-              const pct = Math.min(97, 5 + (text.length / 50));
-              setProgress(pct);
-
-              const now = Date.now();
-              if (now - lastTokenLog > 1500 && tokenBuf.trim()) {
-                const snippet = tokenBuf.replace(/\n+/g, ' ').trim().slice(0, 110);
-                if (snippet) addLog('orchestrator', 'debug', snippet + (tokenBuf.length > 110 ? '…' : ''));
-                tokenBuf = '';
-                lastTokenLog = now;
-              }
-            }
-
-            if (evtType === 'agent_message_success') {
-              text = d.message?.content ?? text;
-              convId = convId ?? d.message?.conversation?.sId ?? d.conversation?.sId;
-              completeAll(text, convId);
-              return;
-            }
-
-            if (evtType === 'agent_error' || evtType === 'error') {
-              failWith(d.error?.message ?? d.message ?? 'Erreur agent Dust');
-              return;
-            }
-          } catch { /* skip malformed JSON */ }
+      // Piloter les cartes depuis les actions run_agent enregistrées
+      for (const act of msg.actions ?? []) {
+        if (act.internalMCPServerName !== 'run_agent') continue;
+        const k = stepFromFunctionCall(act.functionCallName);
+        if (!k) continue;
+        if (act.status === 'succeeded') {
+          completeStep(k, act.executionDurationMs);
+        } else {
+          activateStep(k);
+          if (!notified.has(k)) {
+            const lbl = act.displayLabels?.running;
+            addLog(k, 'debug', lbl ? `… ${lbl}` : `… ${AGENT_CFG[k].label} en cours`);
+            notified.add(k);
+          }
         }
       }
-      completeAll(text, convId);
-    } catch (err) {
-      if (err.name !== 'AbortError') failWith(err.message);
+
+      if (msg.status === 'succeeded') { completeAll(msg.content ?? '', convSId); return; }
+      if (msg.status === 'failed' || msg.error) {
+        failWith(msg.error?.message ?? 'Erreur agent Dust');
+        return;
+      }
     }
+
+    failWith('Délai dépassé (20 min) — le workflow Dust tourne toujours côté serveur. Réessaie de consulter la conversation plus tard.');
   }
 
   // ── Launch ───────────────────────────────────────────────────────────────────
@@ -372,9 +358,11 @@ export function App() {
       `génère les données structurées du dashboard CIO et le rapport PDF final de recherche.`;
 
     try {
+      // POST en JSON (pas de SSE) : on récupère juste l'ID de conversation,
+      // puis on suit l'avancement par polling.
       const res = await fetch(`/api/dust/w/${WS}/assistant/conversations`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title:      `MacroSynthAI ${sf}–${ef}`,
           visibility: 'unlisted',
@@ -398,50 +386,15 @@ export function App() {
         throw new Error(`Dust ${res.status} : ${txt.slice(0, 200)}`);
       }
 
-      const ct = res.headers.get('content-type') ?? '';
-      addLog('orchestrator', 'info', 'Conversation Dust ouverte');
+      const data = await res.json();
+      const convSId = data.conversation?.sId;
+      if (!convSId) throw new Error('Conversation ID manquant dans la réponse Dust');
 
-      if (ct.includes('event-stream')) {
-        // Dust streamed the response directly
-        await parseStream(res.body, ctrl.signal);
-      } else {
-        // Non-streaming JSON: find agent message, then stream its events
-        const data = await res.json();
-        const convSId = data.conversation?.sId;
-        if (!convSId) throw new Error('Conversation ID manquant dans la réponse Dust');
+      addLog('orchestrator', 'info', `Conversation Dust ouverte : ${convSId}`);
+      addLog('orchestrator', 'info', 'Suivi de l\'exécution (polling)…');
 
-        addLog('orchestrator', 'info', `Conversation : ${convSId}`);
-
-        // Look for agent message in the initial response
-        const msgs = (data.conversation?.content ?? []).flat();
-        let agentMsgSId = msgs.find(m => m.type === 'agent_message')?.sId ?? null;
-
-        // If not yet present, poll for it (Dust creates it asynchronously)
-        if (!agentMsgSId) {
-          addLog('orchestrator', 'info', 'Attente de la réponse de l\'orchestrateur…');
-          for (let i = 0; i < 20 && !agentMsgSId; i++) {
-            await new Promise(r => setTimeout(r, 1500));
-            if (ctrl.signal.aborted) return;
-            const r = await fetch(`/api/dust/w/${WS}/assistant/conversations/${convSId}`);
-            if (r.ok) {
-              const d = await r.json();
-              const m = (d.conversation?.content ?? []).flat().find(x => x.type === 'agent_message');
-              if (m) agentMsgSId = m.sId;
-            }
-          }
-        }
-
-        if (!agentMsgSId) throw new Error('Message agent introuvable après 30s de polling');
-
-        addLog('orchestrator', 'info', 'Streaming de la réponse…');
-        const evtRes = await fetch(
-          `/api/dust/w/${WS}/assistant/conversations/${convSId}/messages/${agentMsgSId}/events`,
-          { headers: { Accept: 'text/event-stream' }, signal: ctrl.signal }
-        );
-        if (!evtRes.ok) throw new Error(`Events stream ${evtRes.status}`);
-        if (!evtRes.ok) throw new Error(`Events stream ${evtRes.status}`);
-        await parseStream(evtRes.body, ctrl.signal, convSId);
-      }
+      await pollConversation(convSId, ctrl.signal);
+      return;
     } catch (err) {
       if (err.name === 'AbortError') return;
       failWith(err.message);

@@ -1,5 +1,9 @@
 export const config = {
   api: { bodyParser: false, responseLimit: false },
+  // Un run complet de l'orchestrateur (4 sous-agents + recherches web) peut être
+  // long ; on tient le stream SSE le plus longtemps possible. 300s = défaut/Hobby,
+  // augmentable jusqu'à 800 sur Pro si besoin.
+  maxDuration: 300,
 };
 
 export default async function handler(req, res) {
@@ -42,7 +46,8 @@ export default async function handler(req, res) {
   res.setHeader('Content-Type', ct);
 
   // SSE : désactiver la mise en tampon Vercel/nginx
-  if (ct.includes('event-stream') || accept?.includes('event-stream')) {
+  const isSSE = ct.includes('event-stream') || accept?.includes('event-stream');
+  if (isSSE) {
     res.setHeader('X-Accel-Buffering', 'no');
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Connection', 'keep-alive');
@@ -52,6 +57,48 @@ export default async function handler(req, res) {
   res.flushHeaders?.();
 
   const reader = upstream.body.getReader();
+
+  if (isSSE) {
+    // Pendant qu'un sous-agent tourne, Dust reste silencieux plusieurs minutes
+    // (aucun token) → le timeout d'inactivité du client/proxy coupe la connexion.
+    // On forwarde uniquement des lignes complètes et on injecte un commentaire
+    // ': ping' quand le flux est inactif, pour qu'un heartbeat ne coupe jamais
+    // un événement partiel en deux.
+    const dec = new TextDecoder();
+    let pending = '';
+    let lastWrite = Date.now();
+    const heartbeat = setInterval(() => {
+      if (res.writableEnded) return;
+      if (pending === '' && Date.now() - lastWrite >= 15000) {
+        res.write(': ping\n\n');
+        lastWrite = Date.now();
+      }
+    }, 5000);
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        pending += dec.decode(value, { stream: true });
+        const nl = pending.lastIndexOf('\n');
+        if (nl >= 0) {
+          const out = pending.slice(0, nl + 1);
+          pending = pending.slice(nl + 1);
+          const ok = res.write(out);
+          lastWrite = Date.now();
+          if (!ok) await new Promise(r => res.once('drain', r));
+        }
+      }
+      if (pending) res.write(pending);
+    } catch {
+      // connexion coupée côté client — normal
+    } finally {
+      clearInterval(heartbeat);
+      res.end();
+    }
+    return;
+  }
+
+  // Réponse non-SSE : on relaie les octets bruts tels quels.
   try {
     while (true) {
       const { done, value } = await reader.read();

@@ -20,6 +20,11 @@ export default defineConfig(({ mode }) => {
           configure: proxy => {
             proxy.on('proxyReq', proxyReq => {
               proxyReq.setHeader('Authorization', `Bearer ${env.DUST_API_KEY}`);
+              // Le navigateur envoie Origin/Referer même en same-origin sur les POST ;
+              // le WAF de Dust renvoie 403 si une origine étrangère accompagne un POST.
+              // (En prod, api/dust.js reconstruit des headers propres et ne les transmet pas.)
+              proxyReq.removeHeader('origin');
+              proxyReq.removeHeader('referer');
             });
           },
         },
