@@ -3,7 +3,7 @@ import { StatusBadge } from './StatusBadge.jsx';
 import { timeAgo } from '../utils.js';
 import { Activity } from 'lucide-react';
 
-export function Header({ status, lastRun }) {
+export function Header({ status, lastRun, onDustClick, dustActive }) {
   const lastRunLabel = timeAgo(lastRun);
 
   return (
@@ -26,13 +26,29 @@ export function Header({ status, lastRun }) {
         </div>
 
         {/* Right */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {lastRunLabel && (
             <div className="hidden text-right sm:block">
               <div className="text-[10px] uppercase tracking-widest text-gray-600">Last run</div>
               <div className="text-xs font-semibold text-gray-300">{lastRunLabel}</div>
             </div>
           )}
+
+          {/* Bouton Dust Dashboard */}
+          {onDustClick && (
+            <button
+              onClick={onDustClick}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition-all
+                ${dustActive
+                  ? 'border-violet-500/50 bg-violet-500/20 text-violet-300'
+                  : 'border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200'
+                }`}
+            >
+              <div className="flex h-4 w-4 items-center justify-center rounded bg-gradient-to-br from-violet-500 to-blue-500 text-[9px] font-black text-white">D</div>
+              Dust
+            </button>
+          )}
+
           <StatusBadge status={status} size="md" />
         </div>
       </div>

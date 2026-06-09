@@ -9,6 +9,7 @@ import { PipelineChart } from './components/PipelineChart.jsx';
 import { ExecutionLog } from './components/ExecutionLog.jsx';
 import { PeriodSelector } from './components/PeriodSelector.jsx';
 import { SynthesisDashboard } from './components/SynthesisDashboard.jsx';
+import { DustDashboard } from './components/DustDashboard.jsx';
 import { C } from './constants.js';
 import { nanoid } from './utils.js';
 
@@ -411,7 +412,17 @@ export function App() {
 
       {/* ── Content ── */}
       <div className="relative z-10">
-        <Header status={orchStatus} lastRun={lastRun} />
+        <Header
+          status={orchStatus}
+          lastRun={lastRun}
+          onDustClick={() => setView(v => v === 'dust' ? 'orchestrator' : 'dust')}
+          dustActive={view === 'dust'}
+        />
+
+        {/* ── Dust Dashboard ── */}
+        {view === 'dust' && (
+          <DustDashboard conversationId={synthesis?.conversationId} />
+        )}
 
         {/* ── Error view ── */}
         {view === 'error' && (
@@ -462,7 +473,7 @@ export function App() {
         )}
 
         {/* ── Orchestrator view ── */}
-        {view !== 'dashboard' && view !== 'error' && (
+        {view !== 'dashboard' && view !== 'error' && view !== 'dust' && (
           <main className="mx-auto max-w-6xl px-6 py-8 pb-20">
 
             {cfgError && (

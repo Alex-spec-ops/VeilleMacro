@@ -1,6 +1,5 @@
 export const config = {
   api: { bodyParser: false, responseLimit: false },
-  maxDuration: 300, // 5 minutes — agents Dust peuvent être lents
 };
 
 export default async function handler(req, res) {
