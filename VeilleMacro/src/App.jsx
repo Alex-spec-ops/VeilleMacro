@@ -55,15 +55,13 @@ export const AGENT_CFG = {
   },
 };
 
-// Simulated pipeline start offsets (ms after launch)
-const START_AT = {
-  collector: 3_000,
-  synthesis: 51_000,
-  dashboard: 114_000,
-  pdf:       147_000,
+// Keywords to detect active step from Dust streaming tokens
+const STEP_KEYWORDS = {
+  collector: ['collecte', 'collect', 'macro_research', 'sources', 'recherche', 'publications', 'étape 1', 'step 1'],
+  synthesis: ['synthèse', 'synthesis', 'comparative', 'convergence', 'divergence', 'analystes', 'étape 2', 'step 2'],
+  dashboard: ['dashboard', 'tableau', 'scores', 'visualis', 'étape 3', 'step 3'],
+  pdf:       ['pdf', 'rapport', 'report', 'génère', 'générer', 'étape 4', 'step 4'],
 };
-
-const TOTAL_SIM = 167_000;
 
 const fresh = () =>
   Object.fromEntries(PIPELINE.map(k => [k, { status: 'idle', duration: 0 }]));
@@ -158,7 +156,7 @@ export function App() {
     navigate(dest);
   }
 
-  // ── Timers ──────────────────────────────────────────────────────────────────
+  // ── Real-time agent tracking ─────────────────────────────────────────────────
 
   function killTimers() {
     timersRef.current.forEach(clearTimeout);
@@ -166,6 +164,7 @@ export function App() {
     if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
   }
 
+  // Ticker: only updates durations for already-running agents (no fake progress)
   function startTicker() {
     tickRef.current = setInterval(() => {
       const now = Date.now();
@@ -180,36 +179,39 @@ export function App() {
         }
         return changed ? next : prev;
       });
-      if (t0Ref.current) {
-        setProgress(Math.min(98, ((now - t0Ref.current) / TOTAL_SIM) * 100));
-      }
-    }, 300);
+    }, 500);
   }
 
-  function scheduleAgents() {
+  // Detect which step is active from real Dust token text
+  function detectStepFromToken(tokenText) {
+    const lower = tokenText.toLowerCase();
     for (const k of PIPELINE) {
-      const off = START_AT[k];
-      const dur = AGENT_CFG[k].simulatedDuration;
-
-      // pending state ~1.5s before running
-      if (off > 1500) {
-        timersRef.current.push(
-          setTimeout(() => setAgents(p => ({ ...p, [k]: { ...p[k], status: 'pending' } })), off - 1500)
-        );
+      if (STEP_KEYWORDS[k].some(kw => lower.includes(kw))) {
+        return k;
       }
+    }
+    return null;
+  }
 
-      timersRef.current.push(setTimeout(() => {
-        startsRef.current[k] = Date.now();
-        setAgents(p => ({ ...p, [k]: { ...p[k], status: 'running', duration: 0 } }));
-        addLog(k, 'info', `▶ ${AGENT_CFG[k].label}`);
-        setStep(AGENT_CFG[k].label);
-      }, off));
-
-      timersRef.current.push(setTimeout(() => {
-        const d = startsRef.current[k] ? Date.now() - startsRef.current[k] : dur;
-        setAgents(p => ({ ...p, [k]: { status: 'success', duration: d } }));
-        addLog(k, 'success', `✓ ${AGENT_CFG[k].label}`);
-      }, off + dur));
+  function activateStep(k) {
+    if (!startsRef.current[k]) {
+      startsRef.current[k] = Date.now();
+      setAgents(p => {
+        // Mark previous steps done, current as running
+        const next = { ...p };
+        const idx = PIPELINE.indexOf(k);
+        for (let i = 0; i < idx; i++) {
+          const prev = PIPELINE[i];
+          if (next[prev].status === 'running' || next[prev].status === 'pending') {
+            const dur = startsRef.current[prev] ? Date.now() - startsRef.current[prev] : 0;
+            next[prev] = { status: 'success', duration: dur };
+          }
+        }
+        next[k] = { status: 'running', duration: 0 };
+        return next;
+      });
+      addLog(k, 'info', `▶ ${AGENT_CFG[k].label}`);
+      setStep(AGENT_CFG[k].label);
     }
   }
 
@@ -221,7 +223,7 @@ export function App() {
     setAgents(() =>
       Object.fromEntries(PIPELINE.map(k => [k, {
         status: 'success',
-        duration: startsRef.current[k] ? now - startsRef.current[k] : AGENT_CFG[k].simulatedDuration,
+        duration: startsRef.current[k] ? now - startsRef.current[k] : 0,
       }]))
     );
     setProgress(100);
@@ -290,12 +292,20 @@ export function App() {
             }
 
             if (evtType === 'generation_tokens' && d.classification === 'tokens') {
-              // Only accumulate actual output tokens (skip chain_of_thought)
               const chunk = d.text ?? '';
               text += chunk;
               tokenBuf += chunk;
+
+              // Detect real active step from Dust output
+              const detectedStep = detectStepFromToken(chunk);
+              if (detectedStep) activateStep(detectedStep);
+
+              // Update progress based on real token count (rough proxy)
+              const pct = Math.min(97, 5 + (text.length / 50));
+              setProgress(pct);
+
               const now = Date.now();
-              if (now - lastTokenLog > 1800 && tokenBuf.trim()) {
+              if (now - lastTokenLog > 1500 && tokenBuf.trim()) {
                 const snippet = tokenBuf.replace(/\n+/g, ' ').trim().slice(0, 110);
                 if (snippet) addLog('orchestrator', 'debug', snippet + (tokenBuf.length > 110 ? '…' : ''));
                 tokenBuf = '';
@@ -335,10 +345,11 @@ export function App() {
 
     killTimers();
     startsRef.current = {};
-    t0Ref.current = Date.now();
+    // t0 tracked via startsRef
 
     setLogs([]);
-    setAgents(fresh());
+    // All agents start as pending — will become running when Dust actually mentions them
+    setAgents(Object.fromEntries(PIPELINE.map(k => [k, { status: 'pending', duration: 0 }])));
     setProgress(0);
     setStep('Connexion Dust…');
     setOrchStatus('running');
@@ -353,7 +364,6 @@ export function App() {
     addLog('orchestrator', 'info', `Orchestrateur : macro_synthesis_orchestrator (${orchSId})`);
 
     startTicker();
-    scheduleAgents();
 
     const prompt =
       `Effectue une analyse macro complète pour la période du ${sf} au ${ef}. ` +
@@ -561,7 +571,7 @@ export function App() {
                 canLaunch={launchOk}
               />
 
-              <StatsBar isActive={isActive} />
+              <StatsBar isActive={isActive} synthesis={synthesis} />
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {PIPELINE.map(k => (
