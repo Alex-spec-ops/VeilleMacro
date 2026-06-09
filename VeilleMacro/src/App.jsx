@@ -10,7 +10,10 @@ import { ExecutionLog } from './components/ExecutionLog.jsx';
 import { PeriodSelector } from './components/PeriodSelector.jsx';
 import { SynthesisDashboard } from './components/SynthesisDashboard.jsx';
 import { DustDashboard } from './components/DustDashboard.jsx';
+import { HistoryPanel } from './components/HistoryPanel.jsx';
 import { C } from './constants.js';
+
+const HISTORY_KEY = 'macrosynth_history';
 import { nanoid } from './utils.js';
 
 const WS = 'vTiqcjUPSf';
@@ -72,9 +75,17 @@ export function App() {
   const [agents,     setAgents]       = useState(fresh);
   const [period,     setPeriod]       = useState({ start: null, end: null });
   const [logs,       setLogs]         = useState([]);
-  const [view,       setView]         = useState('orchestrator');
+  // Navigation stack — back button pops to previous view
+  const [navStack,   setNavStack]     = useState(['orchestrator']);
+  const view = navStack[navStack.length - 1];
+
   const [synthesis,  setSynthesis]    = useState({ text: '', conversationId: null });
   const [errorMsg,   setErrorMsg]     = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history,    setHistory]      = useState(() => {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]'); }
+    catch { return []; }
+  });
   const [lastRun,    setLastRun]      = useState(null);
   const [orchSId,    setOrchSId]      = useState(null);
   const [cfgError,   setCfgError]     = useState(null);
@@ -103,6 +114,49 @@ export function App() {
 
   const addLog = (agent, logType, message) =>
     setLogs(p => [...p, { id: nanoid(), timestamp: new Date(), agent, logType, message }]);
+
+  // ── Navigation ───────────────────────────────────────────────────────────────
+
+  function navigate(newView) {
+    setNavStack(prev => {
+      if (prev[prev.length - 1] === newView) return prev;
+      return [...prev, newView];
+    });
+  }
+
+  function goBack() {
+    setNavStack(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
+  }
+
+  // ── History ──────────────────────────────────────────────────────────────────
+
+  function saveToHistory(entry) {
+    setHistory(prev => {
+      const updated = [entry, ...prev].slice(0, 50);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }
+
+  function deleteHistoryEntry(id) {
+    setHistory(prev => {
+      const updated = prev.filter(e => e.id !== id);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }
+
+  function clearHistory() {
+    setHistory([]);
+    localStorage.removeItem(HISTORY_KEY);
+  }
+
+  function openHistoryEntry(entry, dest) {
+    setSynthesis({ text: entry.text ?? '', conversationId: entry.conversationId });
+    if (entry.period) setPeriod({ start: new Date(entry.period.start), end: new Date(entry.period.end) });
+    setHistoryOpen(false);
+    navigate(dest);
+  }
 
   // ── Timers ──────────────────────────────────────────────────────────────────
 
@@ -176,6 +230,14 @@ export function App() {
     setSynthesis({ text, conversationId: convId });
     setLastRun(new Date());
     addLog('orchestrator', 'success', '✓ MacroSynthAI workflow terminé avec succès');
+    saveToHistory({
+      id:             nanoid(),
+      date:           new Date().toISOString(),
+      period:         { start: period.start?.toISOString(), end: period.end?.toISOString() },
+      conversationId: convId,
+      text,
+      preview:        text.slice(0, 250).replace(/#+\s*/g, '').trim(),
+    });
   }
 
   function failWith(msg) {
@@ -183,7 +245,7 @@ export function App() {
     setOrchStatus('error');
     setStep('');
     setErrorMsg(msg);
-    setView('error');
+    navigate('error');
     addLog('orchestrator', 'error', `✗ ${msg}`);
   }
 
@@ -260,7 +322,7 @@ export function App() {
   // ── Launch ───────────────────────────────────────────────────────────────────
 
   async function handleLaunch() {
-    if (orchStatus === 'success') { setView('dashboard'); return; }
+    if (orchStatus === 'success') { navigate('dashboard'); return; }
 
     if (!orchSId) {
       addLog('system', 'error', cfgError ?? 'Agents Dust non chargés — vérifie la connexion.');
@@ -379,7 +441,7 @@ export function App() {
     setStep('');
     setAgents(fresh());
     setLogs([]);
-    setView('orchestrator');
+    setNavStack(['orchestrator']);
     setSynthesis({ text: '', conversationId: null });
     setErrorMsg('');
     startsRef.current = {};
@@ -415,8 +477,22 @@ export function App() {
         <Header
           status={orchStatus}
           lastRun={lastRun}
-          onDustClick={() => setView(v => v === 'dust' ? 'orchestrator' : 'dust')}
+          canGoBack={navStack.length > 1}
+          onBack={goBack}
+          onDustClick={() => view === 'dust' ? goBack() : navigate('dust')}
           dustActive={view === 'dust'}
+          onHistoryClick={() => setHistoryOpen(true)}
+          historyCount={history.length}
+        />
+
+        {/* ── History Panel (slide-over) ── */}
+        <HistoryPanel
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          history={history}
+          onOpen={openHistoryEntry}
+          onDelete={deleteHistoryEntry}
+          onClear={clearHistory}
         />
 
         {/* ── Dust Dashboard ── */}
@@ -428,28 +504,18 @@ export function App() {
         {view === 'error' && (
           <div className="flex min-h-[80vh] items-center justify-center px-6">
             <div className="w-full max-w-lg text-center">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 mx-auto text-4xl">
-                ⚠
-              </div>
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 mx-auto text-4xl">⚠</div>
               <h2 className="mb-3 text-2xl font-bold text-white">Erreur Dust</h2>
-              <p className="mb-6 text-sm leading-relaxed text-gray-400">
-                Le workflow n'a pas pu se terminer.
-              </p>
+              <p className="mb-6 text-sm leading-relaxed text-gray-400">Le workflow n'a pas pu se terminer.</p>
               <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/8 px-5 py-4 text-left">
                 <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-red-400">Message d'erreur</div>
                 <p className="font-mono text-sm text-red-300 break-all">{errorMsg}</p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-                <button
-                  onClick={handleReset}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5"
-                >
+                <button onClick={handleReset} className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5">
                   🔄 Réessayer
                 </button>
-                <button
-                  onClick={() => setView('orchestrator')}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-gray-400 transition-all hover:bg-white/10 hover:text-white"
-                >
+                <button onClick={goBack} className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-gray-400 transition-all hover:bg-white/10 hover:text-white">
                   ← Retour
                 </button>
               </div>
@@ -459,21 +525,11 @@ export function App() {
 
         {/* ── Dashboard view ── */}
         {view === 'dashboard' && (
-          <>
-            <div className="border-b border-white/8 bg-gray-950/80 px-6 py-3 backdrop-blur-xl">
-              <button
-                onClick={() => setView('orchestrator')}
-                className="flex items-center gap-2 text-sm font-semibold text-gray-400 transition-colors hover:text-white"
-              >
-                ← Retour à l'orchestrateur
-              </button>
-            </div>
-            <SynthesisDashboard state={synthesis} period={{ start: period.start, end: period.end }} />
-          </>
+          <SynthesisDashboard state={synthesis} period={{ start: period.start, end: period.end }} />
         )}
 
         {/* ── Orchestrator view ── */}
-        {view !== 'dashboard' && view !== 'error' && view !== 'dust' && (
+        {view === 'orchestrator' && (
           <main className="mx-auto max-w-6xl px-6 py-8 pb-20">
 
             {cfgError && (
@@ -496,7 +552,7 @@ export function App() {
                 currentStep={step}
                 onLaunch={handleLaunch}
                 onReset={handleReset}
-                onViewResults={() => setView('dashboard')}
+                onViewResults={() => navigate('dashboard')}
                 canLaunch={launchOk}
               />
 
