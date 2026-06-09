@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api/dust': {
-          target: 'https://dust.tt',
+          target: 'https://eu.dust.tt',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/api\/dust/, '/api/v1'),
           configure: proxy => {

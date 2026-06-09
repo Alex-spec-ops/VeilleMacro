@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   // /api/dust?p=w/WSID/assistant/...
   const dustPath = req.query.p ? `/${req.query.p}` : req.url.replace(/^\/api\/dust/, '').split('?')[0];
-  const dustUrl = `https://dust.tt/api/v1${dustPath}`;
+  const dustUrl = `https://eu.dust.tt/api/v1${dustPath}`;
 
   const headers = new Headers();
   headers.set('Authorization', `Bearer ${process.env.DUST_API_KEY}`);
