@@ -1,15 +1,24 @@
 import React, { useEffect, useRef } from 'react';
-import { C, LOG_COLORS, AGENT_EMOJI } from '../constants.js';
+import { AGENT_EMOJI } from '../constants.js';
 
-const MONO = "'Monaco','Courier New',monospace";
+const TYPE_COLOR = {
+  info:    'text-blue-400',
+  success: 'text-emerald-400',
+  error:   'text-red-400',
+  warning: 'text-amber-400',
+  debug:   'text-gray-500',
+  system:  'text-violet-400',
+};
 
-/**
- * ExecutionLog({ logs })
- *
- * Dark header (gradient #1a1a1a → #2d2d2d) + light content area.
- * Traffic light controls + title in header.
- * Monospace entries with colored log types.
- */
+const DOT_COLOR = {
+  info:    '#60a5fa',
+  success: '#34d399',
+  error:   '#f87171',
+  warning: '#fbbf24',
+  debug:   '#6b7280',
+  system:  '#a78bfa',
+};
+
 export function ExecutionLog({ logs }) {
   const bottomRef = useRef(null);
 
@@ -23,164 +32,59 @@ export function ExecutionLog({ logs }) {
   };
 
   return (
-    <div
-      style={{
-        background:   '#ffffff',
-        border:       `2px solid ${C.border}`,
-        borderRadius: 16,
-        overflow:     'hidden',
-        boxShadow:    '0 1px 3px rgba(0,0,0,0.06)',
-      }}
-    >
-      {/* ── Dark header ── */}
-      <div
-        style={{
-          background:     'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-          padding:        '14px 20px',
-          display:        'flex',
-          alignItems:     'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        {/* Title + traffic lights */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Traffic lights */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            {[C.coral, C.sunshine, C.teal].map((c, i) => (
-              <span
-                key={i}
-                style={{
-                  width:        13,
-                  height:       13,
-                  background:   c,
-                  borderRadius: '50%',
-                  display:      'inline-block',
-                  cursor:       'default',
-                }}
-              />
-            ))}
+    <div className="overflow-hidden rounded-2xl border border-white/8 bg-gray-950 shadow-2xl shadow-black/50">
+      {/* Terminal header */}
+      <div className="flex items-center justify-between border-b border-white/8 bg-black/40 px-5 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            <span className="h-3 w-3 rounded-full bg-red-500/80" />
+            <span className="h-3 w-3 rounded-full bg-amber-500/80" />
+            <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
           </div>
-
-          <span
-            style={{
-              fontSize:      12,
-              fontFamily:    MONO,
-              fontWeight:    600,
-              letterSpacing: '0.08em',
-              color:         'rgba(255,255,255,0.7)',
-              userSelect:    'none',
-            }}
-          >
-            ▶ Execution Log
-          </span>
+          <span className="font-mono text-xs font-semibold tracking-widest text-gray-500">▶ EXECUTION LOG</span>
         </div>
-
-        {/* Entry count */}
-        <span
-          style={{
-            fontSize:      10,
-            fontFamily:    MONO,
-            color:         'rgba(255,255,255,0.4)',
-            background:    'rgba(255,255,255,0.08)',
-            padding:       '3px 9px',
-            borderRadius:  5,
-            letterSpacing: '0.06em',
-          }}
-        >
+        <span className="rounded bg-white/5 px-2 py-0.5 font-mono text-[10px] text-gray-600">
           {logs.length} entries
         </span>
       </div>
 
-      {/* ── Scrollable content ── */}
-      <div
-        style={{
-          maxHeight:      420,
-          overflowY:      'auto',
-          padding:        '12px 0 4px',
-          background:     '#FAFAFA',
-          fontFamily:     MONO,
-          fontSize:       12,
-        }}
-      >
+      {/* Log content */}
+      <div className="max-h-96 overflow-y-auto p-2 font-mono text-xs">
         {logs.length === 0 ? (
-          <div
-            style={{
-              textAlign:  'center',
-              color:      C.textDim,
-              fontSize:   12,
-              padding:    '32px 0',
-              fontFamily: MONO,
-            }}
-          >
+          <div className="flex items-center justify-center py-10 text-gray-700">
             — waiting for workflow to start —
           </div>
         ) : (
           logs.map((entry, i) => {
-            const typeColor  = LOG_COLORS[entry.logType] ?? C.textMuted;
-            const agentEmoji = AGENT_EMOJI[entry.agent]  ?? '◆';
-            const isEven     = i % 2 === 0;
+            const agentEmoji = AGENT_EMOJI[entry.agent] ?? '◆';
+            const typeColor  = TYPE_COLOR[entry.logType] ?? 'text-gray-400';
+            const dotColor   = DOT_COLOR[entry.logType] ?? '#6b7280';
 
             return (
               <div
                 key={entry.id}
-                className="animate-slide-in log-row"
-                style={{
-                  display:    'flex',
-                  alignItems: 'baseline',
-                  padding:    '4px 20px',
-                  lineHeight: 1.6,
-                  background: isEven ? '#f7f7f5' : '#ffffff',
-                  borderBottom: `1px solid ${C.border}`,
-                  gap:        0,
-                }}
+                className={`flex items-baseline gap-0 rounded px-3 py-1 transition-colors ${i % 2 === 0 ? 'bg-white/[0.02]' : ''} hover:bg-white/5`}
               >
                 {/* Timestamp */}
-                <span
-                  style={{
-                    minWidth:   75,
-                    color:      '#555555',
-                    fontWeight: 600,
-                    flexShrink: 0,
-                    fontSize:   11,
-                  }}
-                >
-                  {formatTs(entry.timestamp)}
-                </span>
+                <span className="w-[72px] flex-shrink-0 text-gray-700">{formatTs(entry.timestamp)}</span>
+
+                {/* Dot */}
+                <span className="mx-2 h-1.5 w-1.5 flex-shrink-0 rounded-full mt-[3px]"
+                  style={{ background: dotColor, boxShadow: `0 0 4px ${dotColor}` }} />
 
                 {/* Agent */}
-                <span
-                  style={{
-                    minWidth:   165,
-                    color:      C.blue,
-                    fontWeight: 700,
-                    flexShrink: 0,
-                    fontSize:   11,
-                  }}
-                >
+                <span className="w-44 flex-shrink-0 text-blue-500 font-bold">
                   {agentEmoji} [{entry.agent}]
                 </span>
 
                 {/* Message */}
-                <span
-                  style={{
-                    flex:      1,
-                    color: entry.logType === 'success' ? '#166534'
-                         : entry.logType === 'error'   ? '#991b1b'
-                         : entry.logType === 'warning' ? '#92400e'
-                         : entry.logType === 'info'    ? '#1e40af'
-                         :                               '#1f2937',
-                    fontWeight:   entry.logType === 'success' || entry.logType === 'error' ? 600 : 400,
-                    wordBreak:    'break-word',
-                    fontSize:     12,
-                  }}
-                >
+                <span className={`flex-1 break-all leading-relaxed ${typeColor}`}>
                   {entry.message}
                 </span>
               </div>
             );
           })
         )}
-
         <div ref={bottomRef} />
       </div>
     </div>

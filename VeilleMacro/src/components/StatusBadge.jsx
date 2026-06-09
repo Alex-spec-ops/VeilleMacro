@@ -1,99 +1,29 @@
 import React from 'react';
-import { C } from '../constants.js';
 
-/* ── Status → gradient / flat ── */
-const STATUS_MAP = {
-  idle:    {
-    label: 'Idle',
-    gradient: null,
-    solidBg: '#e4e4e0',
-    color: '#444444',
-    pulse: false, check: false,
-  },
-  pending: {
-    label: 'Pending',
-    gradient: `linear-gradient(135deg, ${C.sunshine}, ${C.orange})`,
-    solidBg: null,
-    color: '#ffffff',
-    pulse: true, check: false,
-  },
-  running: {
-    label: 'Running',
-    gradient: `linear-gradient(135deg, ${C.blue}, ${C.purple})`,
-    solidBg: null,
-    color: '#ffffff',
-    pulse: true, check: false,
-  },
-  success: {
-    label: 'Done',
-    gradient: `linear-gradient(135deg, ${C.emerald}, ${C.teal})`,
-    solidBg: null,
-    color: '#ffffff',
-    pulse: false, check: true,
-  },
-  error: {
-    label: 'Error',
-    gradient: null,
-    solidBg: C.coral,
-    color: '#ffffff',
-    pulse: false, check: false,
-  },
+const STATUS = {
+  idle:    { label: 'Idle',    classes: 'bg-white/10 text-gray-400 border-white/10' },
+  pending: { label: 'Pending', classes: 'bg-amber-500/20 text-amber-300 border-amber-500/30 animate-pulse' },
+  running: { label: 'Running', classes: 'bg-violet-500/20 text-violet-300 border-violet-500/40 animate-pulse' },
+  success: { label: 'Done',    classes: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+  error:   { label: 'Error',   classes: 'bg-red-500/20 text-red-300 border-red-500/40' },
 };
 
-const SIZE_MAP = {
-  sm: { fontSize: 10, padding: '3px 8px',  gap: 5, dot: 5, br: 5 },
-  md: { fontSize: 11, padding: '5px 11px', gap: 6, dot: 6, br: 6 },
-  lg: { fontSize: 12, padding: '6px 13px', gap: 7, dot: 7, br: 7 },
+const SIZE = {
+  sm: 'text-[10px] px-2 py-0.5 gap-1',
+  md: 'text-[11px] px-2.5 py-1 gap-1.5',
+  lg: 'text-xs px-3 py-1.5 gap-2',
 };
 
-/**
- * StatusBadge({ status, size })
- * Gradient pill badge — modern, data-forward.
- */
 export function StatusBadge({ status, size = 'md' }) {
-  const s = STATUS_MAP[status] ?? STATUS_MAP.idle;
-  const z = SIZE_MAP[size]     ?? SIZE_MAP.md;
+  const s = STATUS[status] ?? STATUS.idle;
+  const z = SIZE[size] ?? SIZE.md;
 
   return (
-    <span
-      className={s.pulse ? 'badge-shimmer' : ''}
-      style={{
-        display:      'inline-flex',
-        alignItems:   'center',
-        gap:          z.gap,
-        padding:      z.padding,
-        fontSize:     z.fontSize,
-        fontWeight:   700,
-        letterSpacing:'0.04em',
-        textTransform:'uppercase',
-        color:        s.color,
-        background:   s.gradient ?? s.solidBg,
-        borderRadius: z.br,
-        userSelect:   'none',
-        flexShrink:   0,
-        boxShadow:    s.gradient ? '0 2px 10px rgba(0,0,0,0.14)' : 'none',
-      }}
-    >
-      {/* Pulsing dot for pending/running */}
-      {s.pulse && (
-        <span
-          className="pulse-dot-anim"
-          style={{
-            width:        z.dot,
-            height:       z.dot,
-            background:   'rgba(255,255,255,0.9)',
-            borderRadius: '50%',
-            display:      'inline-block',
-            flexShrink:   0,
-          }}
-        />
+    <span className={`inline-flex items-center rounded-full border font-semibold uppercase tracking-widest backdrop-blur-sm ${s.classes} ${z}`}>
+      {(status === 'running' || status === 'pending') && (
+        <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
       )}
-
-      {/* Checkmark for success */}
-      {s.check && (
-        <span style={{ fontSize: z.dot + 2, lineHeight: 1 }}>✓</span>
-      )}
-
+      {status === 'success' && <span className="text-current">✓</span>}
       {s.label}
     </span>
   );

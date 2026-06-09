@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ParticleCanvas } from './components/ui/particle-canvas-1.tsx';
+import { FluidParticlesBackground } from './components/ui/fluid-particles-background.tsx';
 import { Header } from './components/Header.jsx';
 import { OrchestratorCard } from './components/OrchestratorCard.jsx';
 import { AgentCard } from './components/AgentCard.jsx';
@@ -386,61 +388,83 @@ export function App() {
   const isActive    = orchStatus !== 'idle';
 
   return (
-    <div style={{ background: '#f0f0eb', minHeight: '100vh', fontFamily: "'Inter','Helvetica Neue',sans-serif", color: '#1a1a1a' }}>
-      <Header status={orchStatus} lastRun={lastRun} />
+    <div className="relative min-h-screen bg-gray-950 font-sans text-gray-100">
 
-      {view === 'dashboard' ? (
-        <>
-          <div style={{ padding: '14px 32px', background: '#fff', borderBottom: `1px solid ${C.border}` }}>
-            <button
-              onClick={() => setView('orchestrator')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#555', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              ← Retour à l'orchestrateur
-            </button>
-          </div>
-          <SynthesisDashboard state={synthesis} period={{ start: period.start, end: period.end }} />
-        </>
-      ) : (
-        <main style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 32px 80px' }}>
+      {/* ── Layered background ── */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        {/* Layer 1 — Fluid Perlin-noise particles */}
+        <FluidParticlesBackground
+          className="absolute inset-0"
+          particleCount={orchStatus === 'running' ? 2000 : 1200}
+          noiseIntensity={0.003}
+          particleSize={{ min: 0.5, max: orchStatus === 'running' ? 2.5 : 1.5 }}
+        />
+        {/* Layer 2 — WebGL coloured particles following mouse */}
+        <ParticleCanvas
+          maxParticles={orchStatus === 'running' ? 500 : 100}
+          particleSizeMin={2}
+          particleSizeMax={orchStatus === 'running' ? 5 : 3}
+          speedScale={orchStatus === 'running' ? 2 : 0.8}
+        />
+      </div>
 
-          {cfgError && (
-            <div style={{ marginBottom: 24, padding: '12px 20px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, fontSize: 13, color: '#991B1B', fontWeight: 600 }}>
-              ⚠ {cfgError}
+      {/* ── Content ── */}
+      <div className="relative z-10">
+        <Header status={orchStatus} lastRun={lastRun} />
+
+        {view === 'dashboard' ? (
+          <>
+            <div className="border-b border-white/8 bg-gray-950/80 px-6 py-3 backdrop-blur-xl">
+              <button
+                onClick={() => setView('orchestrator')}
+                className="flex items-center gap-2 text-sm font-semibold text-gray-400 transition-colors hover:text-white"
+              >
+                ← Retour à l'orchestrateur
+              </button>
             </div>
-          )}
+            <SynthesisDashboard state={synthesis} period={{ start: period.start, end: period.end }} />
+          </>
+        ) : (
+          <main className="mx-auto max-w-6xl px-6 py-8 pb-20">
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <PeriodSelector
-              startDate={period.start}
-              endDate={period.end}
-              onChange={({ start, end }) => setPeriod({ start, end })}
-              disabled={orchStatus === 'running'}
-            />
+            {cfgError && (
+              <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400">
+                <span className="text-base">⚠</span> {cfgError}
+              </div>
+            )}
 
-            <OrchestratorCard
-              status={orchStatus}
-              progress={progress}
-              currentStep={step}
-              onLaunch={handleLaunch}
-              onReset={handleReset}
-              onViewResults={() => setView('dashboard')}
-              canLaunch={launchOk}
-            />
+            <div className="flex flex-col gap-5">
+              <PeriodSelector
+                startDate={period.start}
+                endDate={period.end}
+                onChange={({ start, end }) => setPeriod({ start, end })}
+                disabled={orchStatus === 'running'}
+              />
 
-            <StatsBar isActive={isActive} />
+              <OrchestratorCard
+                status={orchStatus}
+                progress={progress}
+                currentStep={step}
+                onLaunch={handleLaunch}
+                onReset={handleReset}
+                onViewResults={() => setView('dashboard')}
+                canLaunch={launchOk}
+              />
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
-              {PIPELINE.map(k => (
-                <AgentCard key={k} agent={agents[k]} config={AGENT_CFG[k]} />
-              ))}
+              <StatsBar isActive={isActive} />
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {PIPELINE.map(k => (
+                  <AgentCard key={k} agent={agents[k]} config={AGENT_CFG[k]} />
+                ))}
+              </div>
+
+              <PipelineChart agents={agents} />
+              <ExecutionLog logs={logs} />
             </div>
-
-            <PipelineChart agents={agents} />
-            <ExecutionLog logs={logs} />
-          </div>
-        </main>
-      )}
+          </main>
+        )}
+      </div>
     </div>
   );
 }
