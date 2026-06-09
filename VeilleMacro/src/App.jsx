@@ -12,7 +12,7 @@ import { SynthesisDashboard } from './components/SynthesisDashboard.jsx';
 import { C } from './constants.js';
 import { nanoid } from './utils.js';
 
-const WS = 'OB71pA6Ve5';
+const WS = 'vTiqcjUPSf';
 
 const PIPELINE = ['collector', 'synthesis', 'dashboard', 'pdf'];
 
@@ -303,7 +303,7 @@ export function App() {
             context: {
               timezone:          'Europe/Paris',
               username:          'macrosynth_dashboard',
-              fullName:          'MacroSynthAI Dashboard',
+              fullName:          'Alexandre de Carbonnières',
               email:             'alexdecarbof71@gmail.com',
               profilePictureUrl: null,
             },
