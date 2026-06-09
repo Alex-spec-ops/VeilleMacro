@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VeilleMacro — Agent Orchestrator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #f0f0eb;
+      font-family: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color: #1a1a1a;
+    }
+
+    #root { min-height: 100vh; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes pulse-dot-kf {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.6; transform: scale(1.15); }
+    }
+
+    @keyframes badge-shimmer {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.82; }
+    }
+
+    @keyframes shimmer {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    @keyframes card-pulse {
+      0%, 100% { box-shadow: 0 8px 32px var(--agent-shadow); }
+      50%       { box-shadow: 0 14px 48px var(--agent-shadow); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.25; }
+    }
+
+    .spin              { animation: spin 1s linear infinite; }
+    .animate-fade-in   { animation: fade-in 0.3s ease forwards; }
+    .animate-slide-in  { animation: slide-in 0.35s ease forwards; }
+    .pulse-dot-anim    { animation: pulse-dot-kf 2s ease-in-out infinite; }
+    .badge-shimmer     { animation: badge-shimmer 2s ease-in-out infinite; }
+    .blink             { animation: blink 1.2s ease-in-out infinite; }
+
+    .transition-card {
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+    }
+    .transition-progress { transition: width 500ms ease-out !important; }
+
+    /* Stat card hover */
+    .stat-card-el {
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+      cursor: default;
+    }
+    .stat-card-el:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.10) !important;
+    }
+
+    /* Agent card hover */
+    .agent-card-el {
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+    }
+    .agent-card-el:hover {
+      transform: translateY(-5px);
+    }
+
+    /* Button: Launch */
+    .btn-launch {
+      transition: transform 150ms ease, box-shadow 150ms ease, opacity 120ms ease;
+    }
+    .btn-launch:not(:disabled):hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.22) !important;
+    }
+    .btn-launch:not(:disabled):active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    /* Button: Reset (ghost on gradient bg) */
+    .btn-ghost-white {
+      transition: background 150ms ease;
+    }
+    .btn-ghost-white:hover {
+      background: rgba(255,255,255,0.22) !important;
+    }
+
+    /* Log entry hover */
+    .log-row:hover { background: #eeeee8 !important; }
+
+    /* Preset shortcut buttons */
+    .preset-btn:not(:disabled):hover {
+      background:    #EEF2FF !important;
+      border-color:  rgba(102, 126, 234, 0.45) !important;
+      color:         #667EEA !important;
+    }
+    .preset-btn:not(:disabled):active {
+      background:    #E0E7FF !important;
+    }
+
+    /* Date inputs focus ring */
+    input[type="date"]:focus {
+      border-color: #667EEA !important;
+      box-shadow:   0 0 0 3px rgba(102, 126, 234, 0.12);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
