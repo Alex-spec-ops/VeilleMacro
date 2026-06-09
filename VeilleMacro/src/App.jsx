@@ -73,6 +73,7 @@ export function App() {
   const [logs,       setLogs]         = useState([]);
   const [view,       setView]         = useState('orchestrator');
   const [synthesis,  setSynthesis]    = useState({ text: '', conversationId: null });
+  const [errorMsg,   setErrorMsg]     = useState('');
   const [lastRun,    setLastRun]      = useState(null);
   const [orchSId,    setOrchSId]      = useState(null);
   const [cfgError,   setCfgError]     = useState(null);
@@ -180,6 +181,8 @@ export function App() {
     killTimers();
     setOrchStatus('error');
     setStep('');
+    setErrorMsg(msg);
+    setView('error');
     addLog('orchestrator', 'error', `✗ ${msg}`);
   }
 
@@ -377,6 +380,7 @@ export function App() {
     setLogs([]);
     setView('orchestrator');
     setSynthesis({ text: '', conversationId: null });
+    setErrorMsg('');
     startsRef.current = {};
     t0Ref.current = null;
   }
@@ -409,7 +413,41 @@ export function App() {
       <div className="relative z-10">
         <Header status={orchStatus} lastRun={lastRun} />
 
-        {view === 'dashboard' ? (
+        {/* ── Error view ── */}
+        {view === 'error' && (
+          <div className="flex min-h-[80vh] items-center justify-center px-6">
+            <div className="w-full max-w-lg text-center">
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 mx-auto text-4xl">
+                ⚠
+              </div>
+              <h2 className="mb-3 text-2xl font-bold text-white">Erreur Dust</h2>
+              <p className="mb-6 text-sm leading-relaxed text-gray-400">
+                Le workflow n'a pas pu se terminer.
+              </p>
+              <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/8 px-5 py-4 text-left">
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-red-400">Message d'erreur</div>
+                <p className="font-mono text-sm text-red-300 break-all">{errorMsg}</p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <button
+                  onClick={handleReset}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5"
+                >
+                  🔄 Réessayer
+                </button>
+                <button
+                  onClick={() => setView('orchestrator')}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-gray-400 transition-all hover:bg-white/10 hover:text-white"
+                >
+                  ← Retour
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Dashboard view ── */}
+        {view === 'dashboard' && (
           <>
             <div className="border-b border-white/8 bg-gray-950/80 px-6 py-3 backdrop-blur-xl">
               <button
@@ -421,7 +459,10 @@ export function App() {
             </div>
             <SynthesisDashboard state={synthesis} period={{ start: period.start, end: period.end }} />
           </>
-        ) : (
+        )}
+
+        {/* ── Orchestrator view ── */}
+        {view !== 'dashboard' && view !== 'error' && (
           <main className="mx-auto max-w-6xl px-6 py-8 pb-20">
 
             {cfgError && (
@@ -485,3 +526,4 @@ export function App() {
     </div>
   );
 }
+
