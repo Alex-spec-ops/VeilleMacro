@@ -251,12 +251,12 @@ export function App() {
 
   // ── SSE parser ───────────────────────────────────────────────────────────────
 
-  async function parseStream(body, signal) {
+  async function parseStream(body, signal, initialConvId = null) {
     const reader = body.getReader();
     const dec = new TextDecoder();
     let buf = '';
     let text = '';
-    let convId = null;
+    let convId = initialConvId;
     let tokenBuf = '';
     let lastTokenLog = 0;
 
@@ -276,18 +276,22 @@ export function App() {
 
           try {
             const evt = JSON.parse(raw);
+            // Dust EU wraps events: { eventId, data: { type, text, ... } }
+            // Fallback to root for older format
+            const d = evt.data ?? evt;
+            const evtType = d.type;
 
-            if (evt.type === 'user_message_success') {
-              convId = evt.message?.conversation?.sId ?? convId;
+            if (evtType === 'user_message_success') {
               addLog('orchestrator', 'info', 'Message envoyé à Dust ✓');
             }
 
-            if (evt.type === 'agent_message_created') {
+            if (evtType === 'agent_message_created') {
               addLog('orchestrator', 'info', 'Réponse de l\'orchestrateur en cours…');
             }
 
-            if (evt.type === 'generation_tokens') {
-              const chunk = evt.tokens?.text ?? '';
+            if (evtType === 'generation_tokens' && d.classification === 'tokens') {
+              // Only accumulate actual output tokens (skip chain_of_thought)
+              const chunk = d.text ?? '';
               text += chunk;
               tokenBuf += chunk;
               const now = Date.now();
@@ -299,15 +303,15 @@ export function App() {
               }
             }
 
-            if (evt.type === 'agent_message_success') {
-              text = evt.message?.content ?? text;
-              convId = convId ?? evt.conversation?.sId;
+            if (evtType === 'agent_message_success') {
+              text = d.message?.content ?? text;
+              convId = convId ?? d.message?.conversation?.sId ?? d.conversation?.sId;
               completeAll(text, convId);
               return;
             }
 
-            if (evt.type === 'agent_error') {
-              failWith(evt.error?.message ?? 'Erreur agent Dust');
+            if (evtType === 'agent_error' || evtType === 'error') {
+              failWith(d.error?.message ?? d.message ?? 'Erreur agent Dust');
               return;
             }
           } catch { /* skip malformed JSON */ }
@@ -425,7 +429,8 @@ export function App() {
           { headers: { Accept: 'text/event-stream' }, signal: ctrl.signal }
         );
         if (!evtRes.ok) throw new Error(`Events stream ${evtRes.status}`);
-        await parseStream(evtRes.body, ctrl.signal);
+        if (!evtRes.ok) throw new Error(`Events stream ${evtRes.status}`);
+        await parseStream(evtRes.body, ctrl.signal, convSId);
       }
     } catch (err) {
       if (err.name === 'AbortError') return;
