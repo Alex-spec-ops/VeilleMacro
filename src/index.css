@@ -1,0 +1,24 @@
+/* ── Prevent iOS zoom on form inputs ── */
+@media (max-width: 640px) {
+  input[type="date"],
+  input[type="text"],
+  input[type="email"],
+  select,
+  textarea { font-size: 16px !important; }
+
+  button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+}
+
+/* ── Global table scroll wrapper ── */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Tab navigation scroll (hide scrollbar, keep functionality) ── */
+.tabs-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs-scroll::-webkit-scrollbar { display: none; }

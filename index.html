@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VeilleMacro — Agent Orchestrateur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* ── Palette — veille-macro-ux-design.md ── */
+      --color-primary:   #1E3A8A;
+      --color-secondary: #10B981;
+      --color-accent:    #F59E0B;
+      --color-danger:    #EF4444;
+      --color-neutral:   #6B7280;
+      --color-bg:        #F9FAFB;
+
+      /* ── Spacing ── */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+
+      /* ── Radius ── */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+
+      /* ── Shadows ── */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+      --shadow-lg: 0 10px 24px rgba(0,0,0,0.10);
+
+      /* ── Typography ── */
+      --font-sans: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;
+    }
+
+    body {
+      background: var(--color-bg);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      color: #111827;
+    }
+
+    #root { min-height: 100vh; }
+
+    /* ── Skip to content (accessibilité) ── */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: var(--space-md);
+      background: var(--color-primary);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 14px;
+      z-index: 9999;
+      text-decoration: none;
+      transition: top 0.15s;
+    }
+    .skip-link:focus { top: var(--space-md); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes pulse-dot-kf {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.6; transform: scale(1.15); }
+    }
+
+    @keyframes badge-shimmer {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.82; }
+    }
+
+    @keyframes shimmer {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    @keyframes card-pulse {
+      0%, 100% { box-shadow: 0 8px 32px var(--agent-shadow); }
+      50%       { box-shadow: 0 14px 48px var(--agent-shadow); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.25; }
+    }
+
+    .spin              { animation: spin 1s linear infinite; }
+    .animate-fade-in   { animation: fade-in 0.3s ease forwards; }
+    .animate-slide-in  { animation: slide-in 0.35s ease forwards; }
+    .pulse-dot-anim    { animation: pulse-dot-kf 2s ease-in-out infinite; }
+    .badge-shimmer     { animation: badge-shimmer 2s ease-in-out infinite; }
+    .blink             { animation: blink 1.2s ease-in-out infinite; }
+
+    .transition-card {
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+    }
+    .transition-progress { transition: width 500ms ease-out !important; }
+
+    /* Stat card hover */
+    .stat-card-el {
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+      cursor: default;
+    }
+    .stat-card-el:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.10) !important;
+    }
+
+    /* Agent card hover */
+    .agent-card-el {
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+    }
+    .agent-card-el:hover {
+      transform: translateY(-5px);
+    }
+
+    /* Button: Launch */
+    .btn-launch {
+      transition: transform 150ms ease, box-shadow 150ms ease, opacity 120ms ease;
+    }
+    .btn-launch:not(:disabled):hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.22) !important;
+    }
+    .btn-launch:not(:disabled):active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    /* Button: Reset (ghost on gradient bg) */
+    .btn-ghost-white {
+      transition: background 150ms ease;
+    }
+    .btn-ghost-white:hover {
+      background: rgba(255,255,255,0.22) !important;
+    }
+
+    /* Log entry hover */
+    .log-row:hover { background: #eeeee8 !important; }
+
+    /* Preset shortcut buttons */
+    .preset-btn:not(:disabled):hover {
+      background:    #EEF2FF !important;
+      border-color:  rgba(102, 126, 234, 0.45) !important;
+      color:         #667EEA !important;
+    }
+    .preset-btn:not(:disabled):active {
+      background:    #E0E7FF !important;
+    }
+
+    /* ── Focus visible (WCAG 2.1 AA) ── */
+    :focus-visible {
+      outline: 3px solid #3B82F6;
+      outline-offset: 2px;
+    }
+    :focus:not(:focus-visible) { outline: none; }
+
+    /* Date inputs focus ring */
+    input[type="date"]:focus {
+      border-color: var(--color-primary) !important;
+      box-shadow:   0 0 0 3px rgba(30, 58, 138, 0.12);
+    }
+
+    /* ── View transition (fade + scale) ── */
+    @keyframes view-in {
+      from { opacity: 0; transform: scale(0.97) translateY(4px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);   }
+    }
+    .view-enter {
+      animation: view-in 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    /* ── prefers-reduced-motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
