@@ -46,8 +46,8 @@ export function AgentCard({ agent, config }) {
 
       <div className="relative z-10 p-6">
         {/* Header */}
-        <div className="mb-4 flex items-start justify-between">
-          <div className="flex items-center gap-3">
+        <div className="mb-4 flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <div
               className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl transition-all duration-300"
               style={{
@@ -60,14 +60,16 @@ export function AgentCard({ agent, config }) {
                 : <span style={{ filter: isIdle ? 'grayscale(1) opacity(0.3)' : 'none' }}>{emoji}</span>
               }
             </div>
-            <div>
-              <div className={`text-sm font-bold leading-tight ${isIdle ? 'text-gray-500' : 'text-white'}`}>
+            <div className="min-w-0">
+              <div className={`truncate text-sm font-bold leading-tight ${isIdle ? 'text-gray-500' : 'text-white'}`}>
                 {label}
               </div>
-              <div className="mt-0.5 font-mono text-[10px] text-gray-600">{name}</div>
+              <div className="mt-0.5 truncate font-mono text-[10px] text-gray-600">{name}</div>
             </div>
           </div>
-          <StatusBadge status={status} size="sm" />
+          <div className="flex-shrink-0">
+            <StatusBadge status={status} size="sm" />
+          </div>
         </div>
 
         {/* Description */}

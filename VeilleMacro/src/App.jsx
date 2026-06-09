@@ -383,6 +383,8 @@ export function App() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
+  const [showLog, setShowLog] = useState(false);
+
   const periodValid = !!(period.start && period.end && new Date(period.start) < new Date(period.end));
   const launchOk    = orchStatus === 'success' ? true : (periodValid && !!orchSId);
   const isActive    = orchStatus !== 'idle';
@@ -460,7 +462,27 @@ export function App() {
               </div>
 
               <PipelineChart agents={agents} />
-              <ExecutionLog logs={logs} />
+
+              {/* Execution Log — toggle */}
+              <div>
+                <button
+                  onClick={() => setShowLog(v => !v)}
+                  className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-gray-400 transition-all hover:bg-white/10 hover:text-gray-200"
+                >
+                  <span className="font-mono">{showLog ? '▼' : '▶'}</span>
+                  Execution Log
+                  {logs.length > 0 && (
+                    <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-bold text-violet-400">
+                      {logs.length}
+                    </span>
+                  )}
+                </button>
+                {showLog && (
+                  <div className="mt-3">
+                    <ExecutionLog logs={logs} />
+                  </div>
+                )}
+              </div>
             </div>
           </main>
         )}
