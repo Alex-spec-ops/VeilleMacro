@@ -65,32 +65,32 @@ const fresh = () =>
   Object.fromEntries(PIPELINE.map(k => [k, { status: 'idle', duration: 0 }]));
 
 export function App() {
-  const [orchStatus, setOrchStatus]   = useState('idle');
-  const [progress,   setProgress]     = useState(0);
-  const [step,       setStep]         = useState('');
-  const [agents,     setAgents]       = useState(fresh);
-  const [period,     setPeriod]       = useState({ start: null, end: null });
-  const [logs,       setLogs]         = useState([]);
+  const [orchStatus, setOrchStatus] = useState('idle');
+  const [progress, setProgress] = useState(0);
+  const [step, setStep] = useState('');
+  const [agents, setAgents] = useState(fresh);
+  const [period, setPeriod] = useState({ start: null, end: null });
+  const [logs, setLogs] = useState([]);
   // Navigation stack — back button pops to previous view
-  const [navStack,   setNavStack]     = useState(['orchestrator']);
+  const [navStack, setNavStack] = useState(['orchestrator']);
   const view = navStack[navStack.length - 1];
 
-  const [synthesis,  setSynthesis]    = useState({ text: '', conversationId: null });
-  const [errorMsg,   setErrorMsg]     = useState('');
+  const [synthesis, setSynthesis] = useState({ text: '', conversationId: null });
+  const [errorMsg, setErrorMsg] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [history,    setHistory]      = useState(() => {
+  const [history, setHistory] = useState(() => {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]'); }
     catch { return []; }
   });
-  const [lastRun,    setLastRun]      = useState(null);
-  const [orchSId,    setOrchSId]      = useState(null);
-  const [cfgError,   setCfgError]     = useState(null);
+  const [lastRun, setLastRun] = useState(null);
+  const [orchSId, setOrchSId] = useState(null);
+  const [cfgError, setCfgError] = useState(null);
 
   const timersRef = useRef([]);
-  const tickRef   = useRef(null);
+  const tickRef = useRef(null);
   const startsRef = useRef({});
-  const t0Ref     = useRef(null);
-  const abortRef  = useRef(null);
+  const t0Ref = useRef(null);
+  const abortRef = useRef(null);
 
   // Fetch orchestrator sId on mount
   useEffect(() => {
@@ -232,12 +232,12 @@ export function App() {
     setLastRun(new Date());
     addLog('orchestrator', 'success', '✓ MacroSynthAI workflow terminé avec succès');
     saveToHistory({
-      id:             nanoid(),
-      date:           new Date().toISOString(),
-      period:         { start: period.start?.toISOString(), end: period.end?.toISOString() },
+      id: nanoid(),
+      date: new Date().toISOString(),
+      period: { start: period.start?.toISOString(), end: period.end?.toISOString() },
       conversationId: convId,
       text,
-      preview:        text.slice(0, 250).replace(/#+\s*/g, '').trim(),
+      preview: text.slice(0, 250).replace(/#+\s*/g, '').trim(),
     });
   }
 
@@ -260,11 +260,11 @@ export function App() {
 
   async function pollConversation(convSId, signal) {
     const POLL_MS = 6000;
-    const notified  = new Set();      // steps déjà loggés "en cours"
+    const MAX_MS = 24 * 60 * 60 * 1000;   // garde-fou : 1 j
+    const startedAt = Date.now();
+    const notified = new Set();      // steps déjà loggés "en cours"
 
-    // Aucune limite de temps : on suit le workflow jusqu'à ce que les agents
-    // aient fini (succeeded) ou échoué. Seul un reset/abort interrompt le suivi.
-    while (!signal.aborted) {
+    while (Date.now() - startedAt < MAX_MS) {
       await new Promise(r => setTimeout(r, POLL_MS));
       if (signal.aborted) return;
 
@@ -307,6 +307,8 @@ export function App() {
         return;
       }
     }
+
+    failWith('Délai dépassé (1 h) — le workflow Dust tourne toujours côté serveur. Réessaie de consulter la conversation plus tard.');
   }
 
   // ── Launch ───────────────────────────────────────────────────────────────────
@@ -341,24 +343,28 @@ export function App() {
 
     startTicker();
 
-    const prompt = `Fait une analyse de la période du ${sf} au ${ef}`;
+    const prompt =
+      `Effectue une analyse macro complète pour la période du ${sf} au ${ef}. ` +
+      `Collecte les publications stratégiques récentes des principales maisons de recherche, ` +
+      `analyse et synthétise les convergences et divergences entre analystes, ` +
+      `génère les données structurées du dashboard CIO et le rapport PDF final de recherche.`;
 
     try {
       // POST en JSON (pas de SSE) : on récupère juste l'ID de conversation,
       // puis on suit l'avancement par polling.
       const res = await fetch(`/api/dust/w/${WS}/assistant/conversations`, {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title:      `MacroSynthAI ${sf}–${ef}`,
+          title: `MacroSynthAI ${sf}–${ef}`,
           visibility: 'unlisted',
           message: {
             content: prompt,
             context: {
-              timezone:          'Europe/Paris',
-              username:          'macrosynth_dashboard',
-              fullName:          'Alexandre de Carbonnières',
-              email:             'alexdecarbof71@gmail.com',
+              timezone: 'Europe/Paris',
+              username: 'macrosynth_dashboard',
+              fullName: 'Alexandre de Carbonnières',
+              email: 'alexdecarbof71@gmail.com',
               profilePictureUrl: null,
             },
             mentions: [{ configurationId: orchSId }],
@@ -407,8 +413,8 @@ export function App() {
   const [showLog, setShowLog] = useState(false);
 
   const periodValid = !!(period.start && period.end && new Date(period.start) < new Date(period.end));
-  const launchOk    = orchStatus === 'success' ? true : (periodValid && !!orchSId);
-  const isActive    = orchStatus !== 'idle';
+  const launchOk = orchStatus === 'success' ? true : (periodValid && !!orchSId);
+  const isActive = orchStatus !== 'idle';
 
   return (
     <div className="relative min-h-screen bg-gray-950 font-sans text-gray-100">
