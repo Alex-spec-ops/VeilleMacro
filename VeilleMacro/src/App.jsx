@@ -61,6 +61,16 @@ function stepFromFunctionCall(fcn) {
   return null;
 }
 
+// Le dashboard_generator_agent produit un fichier HTML interactif AUTONOME
+// (React+Tailwind via CDN, sans login). On récupère son fileId pour l'embarquer
+// en iframe : c'est le même dashboard que la Frame Dust, mais accessible sans
+// compte Dust (la Frame partagée renvoie 404 en anonyme).
+function findDashboardHtmlFileId(actions) {
+  const act = (actions ?? []).find(a => stepFromFunctionCall(a.functionCallName) === 'dashboard');
+  const file = (act?.generatedFiles ?? []).find(f => f.contentType === 'text/html');
+  return file?.fileId ?? null;
+}
+
 const fresh = () =>
   Object.fromEntries(PIPELINE.map(k => [k, { status: 'idle', duration: 0 }]));
 
@@ -148,7 +158,7 @@ export function App() {
   }
 
   function openHistoryEntry(entry, dest) {
-    setSynthesis({ text: entry.text ?? '', conversationId: entry.conversationId });
+    setSynthesis({ text: entry.text ?? '', conversationId: entry.conversationId, dashboardFileId: entry.dashboardFileId ?? null });
     if (entry.period) setPeriod({ start: new Date(entry.period.start), end: new Date(entry.period.end) });
     setHistoryOpen(false);
     navigate(dest);
@@ -216,7 +226,7 @@ export function App() {
 
   // ── State transitions ────────────────────────────────────────────────────────
 
-  function completeAll(text, convId) {
+  function completeAll(text, convId, dashboardFileId = null) {
     killTimers();
     const now = Date.now();
     setAgents(() =>
@@ -228,7 +238,7 @@ export function App() {
     setProgress(100);
     setStep('');
     setOrchStatus('success');
-    setSynthesis({ text, conversationId: convId });
+    setSynthesis({ text, conversationId: convId, dashboardFileId });
     setLastRun(new Date());
     addLog('orchestrator', 'success', '✓ MacroSynthAI workflow terminé avec succès');
     saveToHistory({
@@ -236,6 +246,7 @@ export function App() {
       date: new Date().toISOString(),
       period: { start: period.start?.toISOString(), end: period.end?.toISOString() },
       conversationId: convId,
+      dashboardFileId,
       text,
       preview: text.slice(0, 250).replace(/#+\s*/g, '').trim(),
     });
@@ -305,7 +316,7 @@ export function App() {
         }
       }
 
-      if (msg.status === 'succeeded') { completeAll(msg.content ?? '', convSId); return; }
+      if (msg.status === 'succeeded') { completeAll(msg.content ?? '', convSId, findDashboardHtmlFileId(msg.actions)); return; }
       if (msg.status === 'failed' || msg.error) {
         failWith(msg.error?.message ?? 'Erreur agent Dust');
         return;

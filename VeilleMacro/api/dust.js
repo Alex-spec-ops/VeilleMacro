@@ -15,7 +15,13 @@ export default async function handler(req, res) {
   }
 
   const dustPath = req.query.p ? `/${req.query.p}` : req.url.replace(/^\/api\/dust/, '').split('?')[0];
-  const dustUrl  = `https://eu.dust.tt/api/v1${dustPath}`;
+  // Préserver les query params (ex. ?action=view pour les fichiers) — le rewrite
+  // Vercel les place dans req.query à côté de `p`.
+  const extraQs = Object.entries(req.query ?? {})
+    .filter(([k]) => k !== 'p')
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
+  const dustUrl  = `https://eu.dust.tt/api/v1${dustPath}${extraQs ? `?${extraQs}` : ''}`;
 
   const headers = new Headers();
   headers.set('Authorization', `Bearer ${process.env.DUST_API_KEY}`);

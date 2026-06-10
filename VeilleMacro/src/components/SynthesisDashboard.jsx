@@ -1,9 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { CalendarDays, ExternalLink, Copy, Check, FileText, MessageSquare, Clock } from 'lucide-react';
+import { CalendarDays, ExternalLink, Copy, Check, FileText, MessageSquare, Clock, LayoutDashboard, Loader2 } from 'lucide-react';
+
+const WS = 'vTiqcjUPSf';
+
+// Le HTML généré par Dust charge Recharts (UMD) mais oublie sa dépendance
+// `prop-types` → Recharts ne s'initialise pas et le dashboard reste blanc.
+// On injecte prop-types juste avant Recharts pour réparer le rendu.
+function patchDashboardHtml(raw) {
+  if (!raw || raw.includes('prop-types')) return raw;
+  return raw.replace(
+    /(<script\s+src="https:\/\/unpkg\.com\/recharts)/i,
+    '<script src="https://unpkg.com/prop-types@15/prop-types.min.js"></script>\n  $1'
+  );
+}
+
+function TabBtn({ active, onClick, icon, label }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition-all
+        ${active
+          ? 'border-violet-500 text-white'
+          : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+    >
+      {icon} {label}
+    </button>
+  );
+}
 
 export function SynthesisDashboard({ state, period }) {
   const [copied, setCopied] = useState(false);
+  // Dashboard HTML interactif autonome généré par Dust (sans login).
+  const fileId = state?.dashboardFileId ?? null;
+  const hasInteractive = !!fileId;
+  const [tab, setTab] = useState('report');           // 'report' | 'interactive'
+  const [html, setHtml] = useState(null);
+  const [htmlLoading, setHtmlLoading] = useState(false);
+  const [htmlError, setHtmlError] = useState(null);
+
+  // À l'ouverture d'un rapport : si un dashboard existe, l'afficher d'emblée.
+  useEffect(() => { setHtml(null); setTab(fileId ? 'interactive' : 'report'); }, [state?.conversationId, fileId]);
+
+  // Récupère le HTML via le proxy (suit le 302 GCS, retire l'en-tête attachment).
+  useEffect(() => {
+    if (tab !== 'interactive' || !fileId || html) return;
+    setHtmlLoading(true);
+    setHtmlError(null);
+    fetch(`/api/dust/w/${WS}/files/${fileId}?action=view`)
+      .then(r => r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      .then(raw => setHtml(patchDashboardHtml(raw)))
+      .catch(e => setHtmlError(e.message))
+      .finally(() => setHtmlLoading(false));
+  }, [tab, fileId, html]);
 
   const startLabel = period?.start ? new Date(period.start).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
   const endLabel   = period?.end   ? new Date(period.end).toLocaleDateString('fr-FR',   { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
@@ -91,7 +140,44 @@ export function SynthesisDashboard({ state, period }) {
         </div>
       </div>
 
-      {/* ── Contenu markdown ── */}
+      {/* ── Onglets ── */}
+      {hasInteractive && (
+        <div className="border-b border-white/8 bg-gray-900/40 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-5xl gap-1 px-6">
+            <TabBtn active={tab === 'report'}      onClick={() => setTab('report')}      icon={<FileText size={14} />}        label="Rapport" />
+            <TabBtn active={tab === 'interactive'} onClick={() => setTab('interactive')} icon={<LayoutDashboard size={14} />} label="Dashboard interactif" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Dashboard interactif (HTML autonome généré par Dust) ── */}
+      {tab === 'interactive' && hasInteractive && (
+        <div className="mx-auto max-w-7xl px-6 py-6">
+          {htmlLoading && (
+            <div className="flex items-center justify-center gap-2 py-24 text-sm text-gray-400">
+              <Loader2 size={16} className="animate-spin" /> Chargement du dashboard interactif…
+            </div>
+          )}
+          {htmlError && (
+            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-300">
+              Impossible de charger le dashboard interactif : {htmlError}
+            </div>
+          )}
+          {html && !htmlLoading && (
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl">
+              <iframe
+                title="Dashboard interactif MacroSynthAI"
+                srcDoc={html}
+                sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                className="h-[calc(100vh-180px)] w-full border-0"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Rapport (markdown) ── */}
+      {tab === 'report' && (
       <div className="mx-auto max-w-5xl px-6 py-10">
         <div className="rounded-2xl border border-white/8 bg-gray-900/60 p-8 backdrop-blur-xl shadow-2xl">
           <div className="prose prose-invert prose-sm max-w-none
@@ -125,6 +211,7 @@ export function SynthesisDashboard({ state, period }) {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
