@@ -316,6 +316,19 @@ export function App() {
         }
       }
 
+      // Une fois le dashboard terminé (dernier run_agent suivi), l'orchestrateur
+      // poursuit sa finalisation NON suivie par une carte : création de la Frame
+      // Dust + envoi de l'email Gmail. Sans indicateur, l'UI paraît gelée. On
+      // bascule donc l'état en "Finalisation" jusqu'au succeeded.
+      if (completed.has('dashboard') && msg.status !== 'succeeded') {
+        setStep('Finalisation — génération du rapport & envoi de l\'email…');
+        setProgress(p => Math.max(p, 97));
+        if (!notified.has('__finalizing')) {
+          addLog('orchestrator', 'info', '⏳ Finalisation (création de la Frame + envoi email Gmail)…');
+          notified.add('__finalizing');
+        }
+      }
+
       if (msg.status === 'succeeded') { completeAll(msg.content ?? '', convSId, findDashboardHtmlFileId(msg.actions)); return; }
       if (msg.status === 'failed' || msg.error) {
         failWith(msg.error?.message ?? 'Erreur agent Dust');
