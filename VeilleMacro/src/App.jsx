@@ -263,6 +263,7 @@ export function App() {
     const MAX_MS = 24 * 60 * 60 * 1000;   // garde-fou : 1 j
     const startedAt = Date.now();
     const notified = new Set();      // steps déjà loggés "en cours"
+    const completed = new Set();     // steps déjà loggés "terminé" (évite les doublons)
 
     while (Date.now() - startedAt < MAX_MS) {
       await new Promise(r => setTimeout(r, POLL_MS));
@@ -290,7 +291,10 @@ export function App() {
         const k = stepFromFunctionCall(act.functionCallName);
         if (!k) continue;
         if (act.status === 'succeeded') {
-          completeStep(k, act.executionDurationMs);
+          if (!completed.has(k)) {
+            completeStep(k, act.executionDurationMs);
+            completed.add(k);
+          }
         } else {
           activateStep(k);
           if (!notified.has(k)) {
