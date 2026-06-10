@@ -260,7 +260,7 @@ export function App() {
 
   async function pollConversation(convSId, signal) {
     const POLL_MS = 6000;
-    const MAX_MS  = 20 * 60 * 1000;   // garde-fou : 20 min
+    const MAX_MS  = 60 * 60 * 1000;   // garde-fou : 1 h
     const startedAt = Date.now();
     const notified  = new Set();      // steps déjà loggés "en cours"
 
@@ -308,7 +308,7 @@ export function App() {
       }
     }
 
-    failWith('Délai dépassé (20 min) — le workflow Dust tourne toujours côté serveur. Réessaie de consulter la conversation plus tard.');
+    failWith('Délai dépassé (1 h) — le workflow Dust tourne toujours côté serveur. Réessaie de consulter la conversation plus tard.');
   }
 
   // ── Launch ───────────────────────────────────────────────────────────────────
