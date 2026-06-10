@@ -260,11 +260,11 @@ export function App() {
 
   async function pollConversation(convSId, signal) {
     const POLL_MS = 6000;
-    const MAX_MS  = 60 * 60 * 1000;   // garde-fou : 1 h
-    const startedAt = Date.now();
     const notified  = new Set();      // steps déjà loggés "en cours"
 
-    while (Date.now() - startedAt < MAX_MS) {
+    // Aucune limite de temps : on suit le workflow jusqu'à ce que les agents
+    // aient fini (succeeded) ou échoué. Seul un reset/abort interrompt le suivi.
+    while (!signal.aborted) {
       await new Promise(r => setTimeout(r, POLL_MS));
       if (signal.aborted) return;
 
@@ -307,8 +307,6 @@ export function App() {
         return;
       }
     }
-
-    failWith('Délai dépassé (1 h) — le workflow Dust tourne toujours côté serveur. Réessaie de consulter la conversation plus tard.');
   }
 
   // ── Launch ───────────────────────────────────────────────────────────────────
@@ -343,11 +341,7 @@ export function App() {
 
     startTicker();
 
-    const prompt =
-      `Effectue une analyse macro complète pour la période du ${sf} au ${ef}. ` +
-      `Collecte les publications stratégiques récentes des principales maisons de recherche, ` +
-      `analyse et synthétise les convergences et divergences entre analystes, ` +
-      `génère les données structurées du dashboard CIO et le rapport PDF final de recherche.`;
+    const prompt = `Fait une analyse de la période du ${sf} au ${ef}`;
 
     try {
       // POST en JSON (pas de SSE) : on récupère juste l'ID de conversation,
