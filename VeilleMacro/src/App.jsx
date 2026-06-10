@@ -18,7 +18,7 @@ import { nanoid } from './utils.js';
 
 const WS = 'vTiqcjUPSf';
 
-const PIPELINE = ['collector', 'synthesis', 'dashboard', 'pdf'];
+const PIPELINE = ['collector', 'synthesis', 'dashboard'];
 
 export const AGENT_CFG = {
   collector: {
@@ -26,7 +26,7 @@ export const AGENT_CFG = {
     label: 'Macro Research Collector',
     name: 'macro_research_collector',
     color: C.coral,
-    simulatedDuration: 45_000,
+    estimateMs: 480_000, // ~8 min (recherches web réelles)
     desc: 'Collecte et structure les publications stratégiques des principales maisons de recherche.',
   },
   synthesis: {
@@ -34,7 +34,7 @@ export const AGENT_CFG = {
     label: 'Comparative Synthesis Agent',
     name: 'comparative_synthesis_agent',
     color: C.blue,
-    simulatedDuration: 60_000,
+    estimateMs: 240_000, // ~4 min
     desc: 'Analyse et compare les positions des analystes pour dégager les convergences et divergences.',
   },
   dashboard: {
@@ -42,16 +42,8 @@ export const AGENT_CFG = {
     label: 'Dashboard Generator',
     name: 'dashboard_generator_agent',
     color: C.teal,
-    simulatedDuration: 30_000,
+    estimateMs: 540_000, // ~9 min
     desc: 'Structure les données pour le dashboard CIO avec scores et matrices de convergence.',
-  },
-  pdf: {
-    emoji: '📄',
-    label: 'PDF Report Generator',
-    name: 'pdf_report_generator',
-    color: C.orange,
-    simulatedDuration: 20_000,
-    desc: 'Génère le rapport PDF final de recherche CIO.',
   },
 };
 
@@ -207,7 +199,7 @@ export function App() {
       });
       addLog(k, 'info', `▶ ${AGENT_CFG[k].label}`);
       setStep(AGENT_CFG[k].label);
-      setProgress(p => Math.max(p, PIPELINE.indexOf(k) * 22 + 8));
+      setProgress(p => Math.max(p, PIPELINE.indexOf(k) * (90 / PIPELINE.length) + 6));
     }
   }
 
@@ -219,7 +211,7 @@ export function App() {
       return { ...p, [k]: { status: 'success', duration: dur } };
     });
     addLog(k, 'success', `✓ ${AGENT_CFG[k].label}`);
-    setProgress(p => Math.max(p, (PIPELINE.indexOf(k) + 1) * 22 + 8));
+    setProgress(p => Math.max(p, (PIPELINE.indexOf(k) + 1) * (90 / PIPELINE.length) + 6));
   }
 
   // ── State transitions ────────────────────────────────────────────────────────
@@ -526,7 +518,7 @@ export function App() {
 
               <StatsBar isActive={isActive} synthesis={synthesis} />
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {PIPELINE.map(k => (
                   <AgentCard key={k} agent={agents[k]} config={AGENT_CFG[k]} />
                 ))}

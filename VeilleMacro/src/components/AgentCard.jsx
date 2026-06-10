@@ -2,10 +2,10 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { StatusBadge } from './StatusBadge.jsx';
 import { BorderBeam } from './ui/border-beam.tsx';
-import { fmtS } from '../utils.js';
+import { fmtMin } from '../utils.js';
 
 export function AgentCard({ agent, config }) {
-  const { emoji, label, name, color, simulatedDuration, desc } = config;
+  const { emoji, label, name, color, estimateMs, desc } = config;
   const { status, duration } = agent;
 
   const isPending = status === 'pending';
@@ -14,7 +14,7 @@ export function AgentCard({ agent, config }) {
   const isIdle    = status === 'idle';
   const isActive  = isRunning || isSuccess || isPending;
 
-  const pct = isSuccess ? 100 : isRunning ? Math.min(99, (duration / simulatedDuration) * 100) : 0;
+  const pct = isSuccess ? 100 : isRunning ? Math.min(99, (duration / estimateMs) * 100) : 0;
 
   // Map color hex to Tailwind-friendly inline gradient
   const glowColor = color + '40';
@@ -89,15 +89,15 @@ export function AgentCard({ agent, config }) {
 
         {/* Timer */}
         <div className="font-mono text-[11px]">
-          {isPending && <span className="text-amber-400">Initialisation…</span>}
+          {isPending && <span className="text-amber-400">Initialisation… <span className="text-gray-600">≈ {fmtMin(estimateMs)}</span></span>}
           {isRunning && (
             <span>
-              <span style={{ color }} className="font-bold">{fmtS(duration)}</span>
-              <span className="text-gray-600"> / {fmtS(simulatedDuration)}</span>
+              <span style={{ color }} className="font-bold">{fmtMin(duration)}</span>
+              <span className="text-gray-600"> / ≈ {fmtMin(estimateMs)}</span>
             </span>
           )}
-          {isSuccess && <span className="text-emerald-400">✓ Completed in {fmtS(simulatedDuration)}</span>}
-          {isIdle && <span className="text-gray-700">Waiting…</span>}
+          {isSuccess && <span className="text-emerald-400">✓ Terminé en {fmtMin(duration)}</span>}
+          {isIdle && <span className="text-gray-700">≈ {fmtMin(estimateMs)} estimé</span>}
         </div>
       </div>
     </div>

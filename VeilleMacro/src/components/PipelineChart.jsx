@@ -10,17 +10,16 @@ const CustomTooltip = ({ active, payload }) => {
       <div className="text-xs font-semibold" style={{ color: d.color }}>
         {d.status === 'success' ? 'Terminé' : d.status === 'running' ? 'En cours…' : 'En attente'}
       </div>
-      <div className="mt-1 text-lg font-extrabold text-white">{d.duration.toFixed(1)}s</div>
+      <div className="mt-1 text-lg font-extrabold text-white">{d.duration.toFixed(1)} min</div>
     </div>
   );
 };
 
 export function PipelineChart({ agents }) {
   const data = [
-    { id: 'collector', label: 'Collecte',    duration: agents.collector.duration / 1000, status: agents.collector.status, color: '#f87171' },
-    { id: 'synthesis', label: 'Synthèse',    duration: agents.synthesis.duration / 1000, status: agents.synthesis.status, color: '#818cf8' },
-    { id: 'dashboard', label: 'Dashboard',   duration: agents.dashboard.duration / 1000, status: agents.dashboard.status, color: '#2dd4bf' },
-    { id: 'pdf',       label: 'Rapport PDF', duration: agents.pdf.duration     / 1000, status: agents.pdf.status,       color: '#fb923c' },
+    { id: 'collector', label: 'Collecte',  duration: agents.collector.duration / 60000, status: agents.collector.status, color: '#f87171' },
+    { id: 'synthesis', label: 'Synthèse',  duration: agents.synthesis.duration / 60000, status: agents.synthesis.status, color: '#818cf8' },
+    { id: 'dashboard', label: 'Dashboard', duration: agents.dashboard.duration / 60000, status: agents.dashboard.status, color: '#2dd4bf' },
   ];
 
   return (
@@ -28,7 +27,7 @@ export function PipelineChart({ agents }) {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <div className="text-sm font-bold text-white">Monitoring de Performance</div>
-          <div className="text-xs text-gray-500">Temps d'exécution par étape (secondes)</div>
+          <div className="text-xs text-gray-500">Temps d'exécution par étape (minutes)</div>
         </div>
         <div className="flex gap-3">
           {['success', 'running', 'idle'].map(st => (

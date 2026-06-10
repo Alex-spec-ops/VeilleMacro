@@ -3,6 +3,12 @@ export function fmtS(ms) {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+// Durée en minutes (1 décimale) — utilisé pour les estimations/temps des agents.
+export function fmtMin(ms) {
+  if (ms == null) return '0 min';
+  return `${(ms / 60_000).toFixed(1)} min`;
+}
+
 export function timeAgo(date) {
   if (!date) return null;
   const diff = Date.now() - new Date(date).getTime();
